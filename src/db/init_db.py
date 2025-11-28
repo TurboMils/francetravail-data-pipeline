@@ -1,6 +1,6 @@
 from config.logging_config import get_logger
 from db.models import Base
-from db.session import engine
+from db.sessions import engine
 
 logger = get_logger(__name__)
 
