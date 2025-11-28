@@ -1,7 +1,7 @@
 # src/db/repository.py
 from __future__ import annotations
 
-from typing import Dict, Iterable, Tuple
+from typing import Dict, Iterable, List, Tuple
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -17,7 +17,7 @@ class OfferRepository:
 
     @staticmethod
     def _map_api_offer(raw: Dict) -> Dict:
-        """Mappe une offre API brute -> dict de colonnes Offre."""
+        """Mappe une offre API brute -> Dict de colonnes Offre."""
         lieu_travail = (raw.get("lieuTravail") or {}).get("libelle")
         salaire = raw.get("salaire") or {}
         salaire_libelle = (
@@ -76,6 +76,6 @@ class OfferRepository:
         self.session.commit()
         return created, updated
 
-    def list_all(self) -> list[Offre]:
+    def list_all(self) -> List[Offre]:
         stmt = select(Offre).order_by(Offre.date_creation.desc().nullslast())
-        return list(self.session.execute(stmt).scalars().all())
+        return List(self.session.execute(stmt).scalars().all())

@@ -94,7 +94,7 @@ class FranceTravailClient:
             raise FranceTravailApiError("Erreur HTTP vers France Travail") from exc
 
         offres = data.get("resultats", [])
-        if not isinstance(offres, list):
+        if not isinstance(offres, List):
             logger.error("Unexpected 'resultats' format: %s", type(offres))
             raise FranceTravailApiError("Format de réponse inattendu")
 
