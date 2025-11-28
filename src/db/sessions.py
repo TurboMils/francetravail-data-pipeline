@@ -1,17 +1,25 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from __future__ import annotations
 
-from config.settings import settings
+from pathlib import Path
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
+
 from config.logging_config import get_logger
+from db.models import Base
 
 logger = get_logger(__name__)
 
+# Répertoire et fichier SQLite local
+DATA_DIR = Path("data")
+DATA_DIR.mkdir(exist_ok=True)
+SQLITE_PATH = DATA_DIR / "data.db"
+DATABASE_URL = f"sqlite:///{SQLITE_PATH}"
+
+
 engine = create_engine(
-    settings.database_url,
-    pool_size=settings.postgres_pool_size,
-    max_overflow=settings.postgres_max_overflow,
-    pool_timeout=settings.postgres_pool_timeout,
-    pool_recycle=settings.postgres_pool_recycle,
+    DATABASE_URL,
+    connect_args={"check_same_thread": False},  # spécifique SQLite
     future=True,
 )
 
@@ -23,9 +31,17 @@ SessionLocal = sessionmaker(
 )
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+def get_engine():
+    """Retourne l'engine global (utile pour scripts)."""
+    return engine
+
+
+def get_session() -> Session:
+    """Retourne une nouvelle session SQLAlchemy."""
+    return SessionLocal()
+
+
+def init_db() -> None:
+    """Création des tables si elles n'existent pas."""
+    logger.info("Initializing SQLite database at %s", SQLITE_PATH)
+    Base.metadata.create_all(bind=engine)

@@ -52,7 +52,7 @@ coverage.xml
 cover/
 
 .vscode/ 
-
+data/
 # Translations
 *.mo
 *.pot
