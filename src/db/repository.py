@@ -18,7 +18,9 @@ class OfferRepository:
     @staticmethod
     def _map_api_offer(raw: Dict) -> Dict:
         """Mappe une offre API brute -> Dict de colonnes Offre."""
-        lieu_travail = (raw.get("lieuTravail") or {}).get("libelle")
+        lieu_travail_obj = raw.get("lieuTravail") or {}
+        lieu_travail_libelle = lieu_travail_obj.get("libelle")
+        departement = lieu_travail_obj.get("departement") 
         salaire = raw.get("salaire") or {}
         salaire_libelle = (
             salaire.get("libelle")
@@ -33,11 +35,12 @@ class OfferRepository:
             "description": raw.get("description"),
             "date_creation": raw.get("dateCreation"),
             "date_actualisation": raw.get("dateActualisation"),
-            "lieu_travail": lieu_travail,
+            "lieu_travail": lieu_travail_libelle,
             "rome_code": raw.get("romeCode"),
             "rome_libelle": raw.get("romeLibelle"),
             "type_contrat": raw.get("typeContrat"),
             "salaire_libelle": salaire_libelle,
+            "departement": departement,
         }
 
     def upsert_from_api(self, raw: Dict) -> Tuple[bool, Offre | None]:
@@ -140,6 +143,9 @@ class OfferRepository:
 
         if type_contrat:
             stmt = stmt.where(Offre.type_contrat == type_contrat)
+
+        if departement:
+            stmt = stmt.where(Offre.departement == departement)
 
         # total avant pagination
         total = self.session.execute(

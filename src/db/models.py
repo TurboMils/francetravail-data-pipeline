@@ -46,6 +46,9 @@ class Offre(Base):
     # 10. Salaire (libellé)
     salaire_libelle: Mapped[str | None] = mapped_column(String(255))
 
+    # 11. Département
+    departement: Mapped[str | None] = mapped_column(String(5))
+
     # Métadonnée interne
     date_ingestion: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

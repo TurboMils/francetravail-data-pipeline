@@ -15,6 +15,7 @@ dependencies = [
   "streamlit",
   "plotly",
   "python-dotenv",
+  "watchdog",
 ]
 
 [project.optional-dependencies]

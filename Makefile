@@ -55,7 +55,7 @@ run-api:
 	PYTHONPATH=src $(BIN)/uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 
 run-streamlit:
-	PYTHONPATH=src $(BIN)/streamlit run streamlit_app/app.py
+	PYTHONPATH=src $(BIN)/streamlit run src/streamlit_app/app.py
 
 run-consumer:
 	PYTHONPATH=src $(BIN)/python -m kafka_consumer.consumer

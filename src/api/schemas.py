@@ -20,6 +20,7 @@ class Offer(BaseModel):
     rome_libelle: Optional[str]
     type_contrat: Optional[str]
     salaire_libelle: Optional[str]
+    departement: Optional[str] 
 
 class OfferListResponse(BaseModel):
     """Schéma Pydantic pour la réponse de liste d'offres."""
