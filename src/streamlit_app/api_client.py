@@ -4,18 +4,12 @@ from typing import Any, Optional
 
 import requests
 
-API_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
-
-
 class APIClient:
     """Client pour communiquer avec l'API FastAPI."""
 
-    def __init__(self, base_url: Optional[str] = None, timeout: int = 30) -> None:
-        self.base_url = {
-            base_url 
-            or os.getenv("STREAMLIT_API_URL")
-            or os.getenv("API_BASE_URL")
-            or "http://localhost:8000"}
+    def __init__(self, timeout: int = 30) -> None:
+        self.base_url = os.getenv("STREAMLIT_API_URL", "http://localhost:8000")
+        
         self.timeout = timeout
 
     def get_health(self) -> dict[str, Any]:
@@ -40,7 +34,7 @@ class APIClient:
             "size": limit,
         }
         resp = requests.post(
-            f"{API_URL}/offers/search", 
+            f"{self.base_url}/offers/search", 
             json=payload, 
             timeout=self.timeout,
             )

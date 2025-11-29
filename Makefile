@@ -59,3 +59,6 @@ run-streamlit:
 
 run-consumer:
 	PYTHONPATH=src $(BIN)/python -m kafka_consumer.consumer
+
+docker-up:
+	docker-compose -f docker/docker-compose.yml up -d --build

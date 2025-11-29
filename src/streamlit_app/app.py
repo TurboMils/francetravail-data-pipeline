@@ -1,9 +1,5 @@
 from __future__ import annotations
 
-import os
-from typing import Optional
-
-import pandas as pd
 import plotly.express as px
 import requests
 import streamlit as st
@@ -31,8 +27,11 @@ except requests.RequestException as e:
 
 with st.sidebar:
     st.header("Filtres")
-
-    keyword = st.text_input("Mot-clé", value="")
+    
+    keyword = st.text_input(
+        "Mots-clés",
+        placeholder="Ex: développeur python, data engineer...",
+    )
 
     departement = (
         st.selectbox(
