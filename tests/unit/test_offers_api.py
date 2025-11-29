@@ -9,20 +9,22 @@ from api.main import app
 from api.dependencies import get_db
 from db.models import Base, Offre
 
-engine_test = create_engine("sqlite:///:memory:",
-                            connect_args={'check_same_thread': False},
-                            future=True,
-                            poolclass=StaticPool
-                            )
+engine_test = create_engine(
+    "sqlite:///:memory:",
+    connect_args={"check_same_thread": False},
+    future=True,
+    poolclass=StaticPool,
+)
 
 TestingSessionLocal = sessionmaker(
-    autocommit=False, 
-    autoflush=False, 
+    autocommit=False,
+    autoflush=False,
     bind=engine_test,
     future=True,
 )
 
 Base.metadata.create_all(bind=engine_test)
+
 
 def override_get_db():
     db = TestingSessionLocal()
@@ -31,9 +33,11 @@ def override_get_db():
     finally:
         db.close()
 
+
 app.dependency_overrides[get_db] = override_get_db
 
 client = TestClient(app)
+
 
 def setup_module(_module=None):
     """Seed minimal de données pour les tests API."""
@@ -62,6 +66,7 @@ def test_health():
     assert resp.status_code == 200
     assert resp.json() == {"status": "ok"}
 
+
 def test_get_offers_list():
     resp = client.get("/offers?page=1&size=10")
     assert resp.status_code == 200
@@ -71,6 +76,7 @@ def test_get_offers_list():
     assert data["size"] == 10
     assert data["total"] >= 1
     assert any(o["id"] == "OFFRE_TEST_1" for o in data["items"])
+
 
 def test_get_offer_by_id():
     resp = client.get("/offers/OFFRE_TEST_1")

@@ -24,9 +24,7 @@ class Settings(BaseSettings):
     # API France Travail
     # ============================================
     france_travail_client_id: str = Field(..., description="Client ID API France Travail")
-    france_travail_client_secret: str = Field(
-        ..., description="Client Secret API France Travail"
-    )
+    france_travail_client_secret: str = Field(..., description="Client Secret API France Travail")
     france_travail_api_url: str = "https://api.francetravail.io/partenaire"
     france_travail_token_url: str = (
         "https://entreprise.francetravail.fr/connexion/oauth2/access_token?realm=/partenaire"
@@ -131,12 +129,8 @@ class Settings(BaseSettings):
     etl_catchup: bool = False
     etl_max_active_runs: int = 1
 
-    etl_default_departments: List[str] = Field(
-        default_factory=lambda: ["75", "92", "93", "94"]
-    )
-    etl_default_contract_types: List[str] = Field(
-        default_factory=lambda: ["CDI", "CDD"]
-    )
+    etl_default_departments: List[str] = Field(default_factory=lambda: ["75", "92", "93", "94"])
+    etl_default_contract_types: List[str] = Field(default_factory=lambda: ["CDI", "CDD"])
     etl_lookback_days: int = 7
 
     @field_validator("kafka_bootstrap_servers")

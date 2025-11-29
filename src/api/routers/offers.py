@@ -8,6 +8,7 @@ from db.repository import OfferRepository
 
 router = APIRouter()
 
+
 @router.get("", response_model=OfferListResponse, tags=["offers"])
 async def list_offers(
     page: int = Query(1, ge=1),
@@ -16,6 +17,7 @@ async def list_offers(
 ):
     items, total = repo.list_paginated(page=page, size=size)
     return OfferListResponse(items=items, total=total, page=page, size=size)
+
 
 @router.get("/{offer_id}", response_model=Offer, tags=["offers"])
 async def get_offer(
@@ -26,6 +28,7 @@ async def get_offer(
     if not offer:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Offer not found")
     return offer
+
 
 @router.post("/search", response_model=OfferListResponse, tags=["offers"])
 async def search_offers(

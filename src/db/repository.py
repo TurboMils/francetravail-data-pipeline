@@ -20,7 +20,7 @@ class OfferRepository:
         """Mappe une offre API brute -> Dict de colonnes Offre."""
         lieu_travail_obj = raw.get("lieuTravail") or {}
         lieu_travail_libelle = lieu_travail_obj.get("libelle")
-        departement = lieu_travail_obj.get("departement") 
+        departement = lieu_travail_obj.get("departement")
         salaire = raw.get("salaire") or {}
         salaire_libelle = (
             salaire.get("libelle")
@@ -82,11 +82,11 @@ class OfferRepository:
     def list_all(self) -> List[Offre]:
         stmt = select(Offre).order_by(Offre.date_creation.desc().nullslast())
         return List(self.session.execute(stmt).scalars().all())
-    
+
     def get_by_id(self, offre_id: str) -> Optional[Offre]:
         stmt = select(Offre).where(Offre.id == offre_id)
         return self.session.execute(stmt).scalar_one_or_none()
-    
+
     def list_paginated(self, page: int, size: int) -> Tuple[List[Offre], int]:
         # Simple pagination avec total count
         if page < 1:
@@ -96,7 +96,7 @@ class OfferRepository:
 
         # Get total count
         total = self.session.execute(select(func.count()).select_from(Offre)).scalar_one()
-        
+
         offset = (page - 1) * size
         stmt = (
             select(Offre)
@@ -106,7 +106,7 @@ class OfferRepository:
         )
         items = list(self.session.execute(stmt).scalars().all())
         return items, total
-    
+
     # Recherche paginée avec filtres
     def search_paginated(
         self,
@@ -134,8 +134,7 @@ class OfferRepository:
         if keyword:
             like_pattern = f"%{keyword}%"
             stmt = stmt.where(
-                (Offre.intitule.ilike(like_pattern))
-                | (Offre.description.ilike(like_pattern))
+                (Offre.intitule.ilike(like_pattern)) | (Offre.description.ilike(like_pattern))
             )
 
         if rome_code:

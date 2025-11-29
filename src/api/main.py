@@ -27,8 +27,10 @@ app.add_middleware(
     allow_headers=settings.api_cors_allow_headers,
 )
 
+
 @app.get("/health", tags=["health"])
 def health_check():
     return {"status": "ok"}
+
 
 app.include_router(offers.router, prefix="/offers", tags=["offers"])

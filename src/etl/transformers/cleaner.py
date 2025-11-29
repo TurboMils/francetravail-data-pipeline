@@ -77,7 +77,7 @@ def clean_offer(raw: Dict[str, Any]) -> Dict[str, Any]:
     - dates : normalisées ISO
     - lieuTravail.departement : complété à partir du codePostal si absent
     """
-    offer = dict(raw) 
+    offer = dict(raw)
 
     # Description
     description = offer.get("description")
