@@ -3,13 +3,12 @@ from __future__ import annotations
 import html
 import re
 from datetime import datetime
-from typing import Any, Dict, Optional
-
+from typing import Any
 
 HTML_TAG_RE = re.compile(r"<[^>]+>")
 
 
-def strip_html(text: Optional[str]) -> Optional[str]:
+def strip_html(text: str | None) -> str | None:
     """Supprime les balises HTML simples et dés-échappe les entités."""
     if text is None:
         return None
@@ -22,7 +21,7 @@ def strip_html(text: Optional[str]) -> Optional[str]:
     return text or None
 
 
-def normalize_date(date_str: Optional[str]) -> Optional[str]:
+def normalize_date(date_str: str | None) -> str | None:
     """
     Normalise une date au format ISO8601 (string).
     L'API renvoie typiquement '2022-10-23T08:15:42Z'.
@@ -50,7 +49,7 @@ def normalize_date(date_str: Optional[str]) -> Optional[str]:
     return date_str
 
 
-def extract_departement_from_code_postal(code_postal: Optional[str]) -> Optional[str]:
+def extract_departement_from_code_postal(code_postal: str | None) -> str | None:
     """
     Extrait un code département probable à partir du code postal.
     Règle simplifiée (France métropolitaine) :
@@ -69,7 +68,7 @@ def extract_departement_from_code_postal(code_postal: Optional[str]) -> Optional
     return cp[:2]
 
 
-def clean_offer(raw: Dict[str, Any]) -> Dict[str, Any]:
+def clean_offer(raw: dict[str, Any]) -> dict[str, Any]:
     """
     Applique les transformations de nettoyage / normalisation sur une offre brute.
     On travaille sur une copie, on retourne un nouveau Dict.

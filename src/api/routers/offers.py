@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from api.schemas import Offer, OfferListResponse, OfferSearchRequest
 from api.dependencies import get_offer_repository
+from api.schemas import Offer, OfferListResponse, OfferSearchRequest
 from db.repository import OfferRepository
 
 router = APIRouter()

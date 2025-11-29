@@ -1,9 +1,9 @@
 # src/db/repository.py
 from __future__ import annotations
 
-from typing import Dict, Iterable, List, Optional, Tuple
+from collections.abc import Iterable
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from db.models import Offre
@@ -16,7 +16,7 @@ class OfferRepository:
         self.session = session
 
     @staticmethod
-    def _map_api_offer(raw: Dict) -> Dict:
+    def _map_api_offer(raw: dict) -> dict:
         """Mappe une offre API brute -> Dict de colonnes Offre."""
         lieu_travail_obj = raw.get("lieuTravail") or {}
         lieu_travail_libelle = lieu_travail_obj.get("libelle")
@@ -43,7 +43,7 @@ class OfferRepository:
             "departement": departement,
         }
 
-    def upsert_from_api(self, raw: Dict) -> Tuple[bool, Offre | None]:
+    def upsert_from_api(self, raw: dict) -> tuple[bool, Offre | None]:
         """Insère ou met à jour une offre. Retourne (created, instance)."""
         data = self._map_api_offer(raw)
         offre_id = data["id"]
@@ -65,7 +65,7 @@ class OfferRepository:
 
         return created, instance
 
-    def upsert_many_from_api(self, raws: Iterable[Dict]) -> Tuple[int, int]:
+    def upsert_many_from_api(self, raws: Iterable[dict]) -> tuple[int, int]:
         created = 0
         updated = 0
 
@@ -79,15 +79,15 @@ class OfferRepository:
         self.session.commit()
         return created, updated
 
-    def list_all(self) -> List[Offre]:
+    def list_all(self) -> list[Offre]:
         stmt = select(Offre).order_by(Offre.date_creation.desc().nullslast())
-        return List(self.session.execute(stmt).scalars().all())
+        return list(self.session.execute(stmt).scalars().all())
 
-    def get_by_id(self, offre_id: str) -> Optional[Offre]:
+    def get_by_id(self, offre_id: str) -> Offre | None:
         stmt = select(Offre).where(Offre.id == offre_id)
         return self.session.execute(stmt).scalar_one_or_none()
 
-    def list_paginated(self, page: int, size: int) -> Tuple[List[Offre], int]:
+    def list_paginated(self, page: int, size: int) -> tuple[list[Offre], int]:
         # Simple pagination avec total count
         if page < 1:
             page = 1
@@ -111,13 +111,13 @@ class OfferRepository:
     def search_paginated(
         self,
         *,
-        keyword: Optional[str],
-        departement: Optional[str],
-        rome_code: Optional[str],
-        type_contrat: Optional[str],
+        keyword: str | None,
+        departement: str | None,
+        rome_code: str | None,
+        type_contrat: str | None,
         page: int,
         size: int,
-    ) -> Tuple[List[Offre], int]:
+    ) -> tuple[list[Offre], int]:
         """
         Recherche naïve :
         - keyword sur intitule / description (LIKE)

@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import List, Literal
+from typing import Literal
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -102,12 +102,12 @@ class Settings(BaseSettings):
     api_version: str = "1.0.0"
     api_description: str = "API d'accès aux offres d'emploi France Travail"
 
-    api_cors_origins: List[str] = Field(
+    api_cors_origins: list[str] = Field(
         default_factory=lambda: ["http://localhost:8501", "http://localhost:3000"]
     )
     api_cors_allow_credentials: bool = True
-    api_cors_allow_methods: List[str] = Field(default_factory=lambda: ["*"])
-    api_cors_allow_headers: List[str] = Field(default_factory=lambda: ["*"])
+    api_cors_allow_methods: list[str] = Field(default_factory=lambda: ["*"])
+    api_cors_allow_headers: list[str] = Field(default_factory=lambda: ["*"])
 
     # ============================================
     # Streamlit
@@ -129,8 +129,8 @@ class Settings(BaseSettings):
     etl_catchup: bool = False
     etl_max_active_runs: int = 1
 
-    etl_default_departments: List[str] = Field(default_factory=lambda: ["75", "92", "93", "94"])
-    etl_default_contract_types: List[str] = Field(default_factory=lambda: ["CDI", "CDD"])
+    etl_default_departments: list[str] = Field(default_factory=lambda: ["75", "92", "93", "94"])
+    etl_default_contract_types: list[str] = Field(default_factory=lambda: ["CDI", "CDD"])
     etl_lookback_days: int = 7
 
     @field_validator("kafka_bootstrap_servers")
@@ -148,7 +148,7 @@ class Settings(BaseSettings):
         return v
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     return Settings()
 

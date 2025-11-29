@@ -3,8 +3,8 @@ from __future__ import annotations
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from db.sessions import get_session
 from db.repository import OfferRepository
+from db.sessions import get_session
 
 
 def get_db() -> Session:

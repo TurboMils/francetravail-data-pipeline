@@ -1,15 +1,16 @@
 import os
-import pandas as pd
-from typing import Any, Optional
+from typing import Any
 
+import pandas as pd
 import requests
+
 
 class APIClient:
     """Client pour communiquer avec l'API FastAPI."""
 
     def __init__(self, timeout: int = 30) -> None:
         self.base_url = os.getenv("STREAMLIT_API_URL", "http://localhost:8000")
-        
+
         self.timeout = timeout
 
     def get_health(self) -> dict[str, Any]:
@@ -20,9 +21,9 @@ class APIClient:
 
     def fetch_offers(
         self,
-        keyword: Optional[str] = None,
-        departement: Optional[str] = None,
-        type_contrat: Optional[str] = None,
+        keyword: str | None = None,
+        departement: str | None = None,
+        type_contrat: str | None = None,
         limit: int = 200,
     ) -> pd.DataFrame:
         payload = {
@@ -34,10 +35,10 @@ class APIClient:
             "size": limit,
         }
         resp = requests.post(
-            f"{self.base_url}/offers/search", 
-            json=payload, 
+            f"{self.base_url}/offers/search",
+            json=payload,
             timeout=self.timeout,
-            )
+        )
         resp.raise_for_status()
         data = resp.json()
         items = data.get("items", [])
@@ -56,13 +57,11 @@ class APIClient:
         deps: list[str] = []
         if "departement" in df.columns:
             deps = sorted(
-                d for d in df["departement"].dropna().astype(str).unique().tolist() 
-                if d.strip()
+                d for d in df["departement"].dropna().astype(str).unique().tolist() if d.strip()
             )
         contrats: list[str] = []
         if "type_contrat" in df.columns:
             contrats = sorted(
-                c for c in df["type_contrat"].dropna().astype(str).unique().tolist() 
-                if c.strip()
+                c for c in df["type_contrat"].dropna().astype(str).unique().tolist() if c.strip()
             )
         return deps, contrats

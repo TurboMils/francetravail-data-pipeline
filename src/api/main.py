@@ -3,10 +3,9 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from config.settings import settings
-from config.logging_config import get_logger
-
 from api.routers import offers
+from config.logging_config import get_logger
+from config.settings import settings
 from db.sessions import init_db
 
 logger = get_logger(__name__)

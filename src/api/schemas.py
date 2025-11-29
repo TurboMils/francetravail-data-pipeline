@@ -1,8 +1,6 @@
 # src/api/schemas.py
 from __future__ import annotations
 
-from typing import Optional, List
-
 from pydantic import BaseModel, ConfigDict
 
 
@@ -13,21 +11,21 @@ class Offer(BaseModel):
 
     id: str
     intitule: str
-    description: Optional[str]
-    date_creation: Optional[str]
-    date_actualisation: Optional[str]
-    lieu_travail: Optional[str]
-    rome_code: Optional[str]
-    rome_libelle: Optional[str]
-    type_contrat: Optional[str]
-    salaire_libelle: Optional[str]
-    departement: Optional[str]
+    description: str | None
+    date_creation: str | None
+    date_actualisation: str | None
+    lieu_travail: str | None
+    rome_code: str | None
+    rome_libelle: str | None
+    type_contrat: str | None
+    salaire_libelle: str | None
+    departement: str | None
 
 
 class OfferListResponse(BaseModel):
     """Schéma Pydantic pour la réponse de liste d'offres."""
 
-    items: List[Offer]
+    items: list[Offer]
     total: int
     page: int
     size: int
@@ -36,9 +34,9 @@ class OfferListResponse(BaseModel):
 class OfferSearchRequest(BaseModel):
     """Schéma Pydantic pour la requête de recherche d'offres."""
 
-    keyword: Optional[str] = None
-    departement: Optional[str] = None  # pour plus tard
-    rome_code: Optional[str] = None
-    type_contrat: Optional[str] = None
+    keyword: str | None = None
+    departement: str | None = None  # pour plus tard
+    rome_code: str | None = None
+    type_contrat: str | None = None
     page: int = 1
     size: int = 50

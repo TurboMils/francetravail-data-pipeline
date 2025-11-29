@@ -5,8 +5,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool  # Pour SQLite in-memory
 
-from api.main import app
 from api.dependencies import get_db
+from api.main import app
 from db.models import Base, Offre
 
 engine_test = create_engine(

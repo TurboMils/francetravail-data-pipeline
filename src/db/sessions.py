@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from config.settings import settings
 from config.logging_config import get_logger
+from config.settings import settings
 from db.models import Base
 
 logger = get_logger(__name__)
@@ -14,16 +12,16 @@ logger = get_logger(__name__)
 
 engine = create_engine(
     settings.database_url,
-    pool_size=settings.postgres_pool_size, # Nombre de connexions persistantes dans le pool
-    max_overflow=settings.postgres_max_overflow, # Nombre maximum de connexions supplémentaires autorisées
-    pool_timeout=settings.postgres_pool_timeout, # Temps d'attente pour obtenir une connexion avant de lever une erreur
-    pool_recycle=settings.postgres_pool_recycle, # Temps après lequel une connexion est recyclée
-    future=True, # Utiliser le style 2.0 de SQLAlchemy
+    pool_size=settings.postgres_pool_size,  # Nombre de connexions persistantes dans le pool
+    max_overflow=settings.postgres_max_overflow,  # Nombre maximum de connexions supplémentaires autorisées
+    pool_timeout=settings.postgres_pool_timeout,  # Temps d'attente pour obtenir une connexion avant de lever une erreur
+    pool_recycle=settings.postgres_pool_recycle,  # Temps après lequel une connexion est recyclée
+    future=True,  # Utiliser le style 2.0 de SQLAlchemy
 )
 
 SessionLocal = sessionmaker(
     bind=engine,
-    autocommit=False, 
+    autocommit=False,
     autoflush=False,
     future=True,
 )

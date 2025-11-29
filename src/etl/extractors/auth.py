@@ -2,12 +2,11 @@
 from __future__ import annotations
 
 import time
-from typing import Optional
 
 import requests
 
-from config.settings import settings
 from config.logging_config import get_logger
+from config.settings import settings
 
 logger = get_logger(__name__)
 
@@ -21,10 +20,10 @@ class FranceTravailAuth:
 
     def __init__(
         self,
-        client_id: Optional[str] = None,
-        client_secret: Optional[str] = None,
-        token_url: Optional[str] = None,
-        scope: Optional[str] = None,
+        client_id: str | None = None,
+        client_secret: str | None = None,
+        token_url: str | None = None,
+        scope: str | None = None,
         timeout: int = 30,
     ) -> None:
         self.client_id = client_id or settings.france_travail_client_id
@@ -33,8 +32,8 @@ class FranceTravailAuth:
         self.scope = scope or settings.france_travail_scope
         self.timeout = timeout
 
-        self._access_token: Optional[str] = None
-        self._expires_at: Optional[float] = None  # timestamp en secondes
+        self._access_token: str | None = None
+        self._expires_at: float | None = None  # timestamp en secondes
 
     def get_access_token(self) -> str:
         """Retourne un token valide, rafraîchit si nécessaire."""

@@ -1,13 +1,13 @@
 # src/etl/extractors/france_travail_api.py
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import requests
 from requests import HTTPError
 
-from config.settings import settings
 from config.logging_config import get_logger
+from config.settings import settings
 from etl.extractors.auth import FranceTravailAuth, FranceTravailAuthError
 
 logger = get_logger(__name__)
@@ -22,7 +22,7 @@ class FranceTravailClient:
 
     def __init__(
         self,
-        auth: Optional[FranceTravailAuth] = None,
+        auth: FranceTravailAuth | None = None,
         timeout: int = 30,
     ) -> None:
         self.auth = auth or FranceTravailAuth()
@@ -32,11 +32,11 @@ class FranceTravailClient:
     def search_offers(
         self,
         keyword: str,
-        departement: Optional[str] = None,
+        departement: str | None = None,
         limit: int = 10,
-        publiee_depuis: Optional[int] = 7,
+        publiee_depuis: int | None = 7,
         sort: int = 1,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Recherche simple par mots-clés + département.
         """
@@ -53,7 +53,7 @@ class FranceTravailClient:
         max_per_page = min(limit, settings.france_travail_max_results_per_page)
         range_param = f"0-{max_per_page - 1}"
 
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "motsCles": keyword,
             "range": range_param,
             "sort": sort,
@@ -81,7 +81,7 @@ class FranceTravailClient:
             )
             try:
                 resp.raise_for_status()
-            except HTTPError as exc:
+            except HTTPError:
                 logger.error(
                     "France Travail API error HTTP %s, body=%s",
                     resp.status_code,
@@ -94,7 +94,7 @@ class FranceTravailClient:
             raise FranceTravailApiError("Erreur HTTP vers France Travail") from exc
 
         offres = data.get("resultats", [])
-        if not isinstance(offres, List):
+        if not isinstance(offres, list):
             logger.error("Unexpected 'resultats' format: %s", type(offres))
             raise FranceTravailApiError("Format de réponse inattendu")
 
