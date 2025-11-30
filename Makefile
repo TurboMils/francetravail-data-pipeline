@@ -58,7 +58,13 @@ run-streamlit:
 	PYTHONPATH=src $(BIN)/streamlit run src/streamlit_app/app.py
 
 run-consumer:
-	PYTHONPATH=src $(BIN)/python -m kafka_consumer.consumer
+	KAFKA_BOOTSTRAP_SERVERS=localhost:9092 PYTHONPATH=src $(BIN)/python -m kafka_consumer.consumer
+
+produce-offers: 
+	PYTHONPATH=src $(BIN)/python scripts/produce_offers.py --count 100
 
 docker-up:
 	docker-compose -f docker/docker-compose.yml up -d --build
+
+kafka-create-topics: 
+	bash ./scripts/create_kafka_topics.sh

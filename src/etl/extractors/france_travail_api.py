@@ -31,7 +31,7 @@ class FranceTravailClient:
 
     def search_offers(
         self,
-        keyword: str,
+        keyword: str | None = None,
         departement: str | None = None,
         limit: int = 10,
         publiee_depuis: int | None = 7,
@@ -54,10 +54,11 @@ class FranceTravailClient:
         range_param = f"0-{max_per_page - 1}"
 
         params: dict[str, Any] = {
-            "motsCles": keyword,
             "range": range_param,
             "sort": sort,
         }
+        if keyword:
+            params["motCle"] = keyword
         if departement:
             params["departement"] = departement
         if publiee_depuis is not None:

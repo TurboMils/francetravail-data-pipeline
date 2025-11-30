@@ -22,7 +22,6 @@ services:
       timeout: 5s
       retries: 5
 
- 
   # FastAPI
   api:
     build:
@@ -40,7 +39,8 @@ services:
       API_HOST: 0.0.0.0
       API_PORT: 8000
       PYTHONPATH: /app/src
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      # IMPORTANT : listener interne Kafka
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     ports:
       - "8000:8000"
     volumes:
@@ -77,7 +77,7 @@ services:
 
   # Zookeeper
   zookeeper:
-    image: confluentinc/cp-zookeeper:latest
+    image: confluentinc/cp-zookeeper:7.5.0
     container_name: ft-zookeeper
     restart: unless-stopped
     environment:
@@ -87,10 +87,10 @@ services:
       - "2181:2181"
     networks:
       - ft-network
-  
-  # Kafka
+
+  # Kafka (Confluent) avec 2 listeners
   kafka:
-    image: confluentinc/cp-kafka:latest
+    image: confluentinc/cp-kafka:7.5.0
     container_name: ft-kafka
     restart: unless-stopped
     depends_on:
@@ -98,17 +98,21 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+
+      # - PLAINTEXT  : interne (réseau docker) -> kafka:29092
+      # - PLAINTEXT_HOST : externe (host)     -> localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9092
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
     ports:
-      - "9092:9092"
+      - "9092:9092"   # accès depuis ta machine -> localhost:9092
+      - "29092:29092" # optionnel pour debug
     networks:
       - ft-network
-
 
 networks:
   ft-network:

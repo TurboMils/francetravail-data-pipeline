@@ -1,29 +1,25 @@
 set -euo pipefail
 
-DOCKER_COMPOSE="docker-compose -f docker/docker-compose.yml"
+BROKER="${BROKER:-kafka:29092}"
 
-RAW_TOPIC="francetravail.offres.raw"
-DLQ_TOPIC="francetravail.offres.dlq"
+echo "Creating Kafka topics on broker: ${BROKER} ..."
 
-echo "Creating Kafka topics ..."
-
-$DOCKER_COMPOSE exec kafka bash -c "
+docker-compose -f docker/docker-compose.yml exec kafka \
   kafka-topics --create \
-    --topic ${RAW_TOPIC} \
-    --bootstrap-server kafka:9092 \
-    --replication-factor 1 \
+    --if-not-exists \
+    --topic francetravail_offres_raw \
+    --bootstrap-server "${BROKER}" \
     --partitions 3 \
-    --if-not-exists
-"
+    --replication-factor 1
 
-$DOCKER_COMPOSE exec kafka bash -c "
+docker-compose -f docker/docker-compose.yml exec kafka \
   kafka-topics --create \
-    --topic ${DLQ_TOPIC} \
-    --bootstrap-server kafka:9092 \
-    --replication-factor 1 \
+    --if-not-exists \
+    --topic francetravail_offres_dlq \
+    --bootstrap-server "${BROKER}" \
     --partitions 1 \
-    --if-not-exists
-"
+    --replication-factor 1
 
-echo "Topics created:"
-$DOCKER_COMPOSE exec kafka bash -c "kafka-topics --list --bootstrap-server kafka:9092"
+echo "Current topics:"
+docker-compose -f docker/docker-compose.yml exec kafka \
+  kafka-topics --list --bootstrap-server "${BROKER}"

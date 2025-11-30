@@ -73,8 +73,8 @@ class Settings(BaseSettings):
     # Kafka
     # ============================================
     kafka_bootstrap_servers: str = "localhost:9092"
-    kafka_topic_raw_offers: str = "francetravail.offres.raw"
-    kafka_topic_dlq: str = "francetravail.offres.dlq"
+    kafka_topic_raw_offers: str = "francetravail_offres_raw"
+    kafka_topic_dlq: str = "francetravail_offres_dlq"
     kafka_consumer_group: str = "francetravail-consumer"
     kafka_auto_offset_reset: Literal["earliest", "latest"] = "earliest"
     kafka_enable_auto_commit: bool = False
