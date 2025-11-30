@@ -129,7 +129,9 @@ services:
       - ft-network
   
   airflow-webserver:
-    image: apache/airflow:2.10.2-python3.12
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.airflow
     container_name: ft-airflow-web
     restart: unless-stopped
     depends_on:
@@ -140,9 +142,9 @@ services:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
       AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_password@airflow-db:5432/airflow
-      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
       AIRFLOW_UID: 50000
-      PYTHONPATH: /opt/airflow:/opt/airflow/src
+      PYTHONPATH: /opt/airflow/src
     volumes:
       - ../src/airflow_dags:/opt/airflow/dags
       - ../src:/opt/airflow/src
@@ -153,7 +155,9 @@ services:
       - ft-network
   
   airflow-scheduler:
-    image: apache/airflow:2.10.2-python3.12
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.airflow
     container_name: ft-airflow-scheduler
     restart: unless-stopped
     depends_on:
@@ -164,9 +168,9 @@ services:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
       AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_password@airflow-db:5432/airflow
-      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
       AIRFLOW_UID: 50000
-      PYTHONPATH: /opt/airflow:/opt/airflow/src
+      PYTHONPATH: /opt/airflow/src
     volumes:
       - ../src/airflow_dags:/opt/airflow/dags
       - ../src:/opt/airflow/src

@@ -30,6 +30,9 @@ install-dev: venv
 	$(BIN)/pip install -e '.[dev]'
 	@echo "Dépendances production + dev installées"
 
+init-db:
+	PYTHONPATH=src $(BIN)/python scripts/init_db.py
+
 lint:
 	$(BIN)/ruff check src tests
 	$(BIN)/black --check src tests
@@ -71,3 +74,20 @@ kafka-create-topics:
 
 generate-fernet-key: 
 	@$(BIN)/python scripts/generate_fernet_key.py
+
+airflow-init: 
+	cd docker && docker-compose up -d airflow-db
+	cd docker && docker-compose run --rm airflow-webserver airflow db upgrade
+	cd docker && docker-compose run --rm airflow-webserver airflow users create \
+	  --username admin \
+	  --password admin \
+	  --firstname Admin \
+	  --lastname User \
+	  --role Admin \
+	  --email admin@example.com
+
+airflow-up: 
+	cd docker && docker-compose up -d airflow-webserver airflow-scheduler
+
+airflow-down:
+	cd docker && docker-compose stop airflow-webserver airflow-scheduler

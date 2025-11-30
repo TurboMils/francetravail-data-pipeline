@@ -16,7 +16,7 @@ dependencies = [
   "plotly",
   "python-dotenv",
   "watchdog",
-  "cryptography",
+  "apache-airflow",
 ]
 
 [project.optional-dependencies]
@@ -28,6 +28,7 @@ dev = [
   "ruff",
   "mypy",
   "coverage",
+  "cryptography",
 ]
 
 [tool.black]

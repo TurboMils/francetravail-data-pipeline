@@ -131,7 +131,7 @@ class Settings(BaseSettings):
 
     etl_default_departments: list[str] = Field(default_factory=lambda: ["75", "92", "93", "94"])
     etl_default_contract_types: list[str] = Field(default_factory=lambda: ["CDI", "CDD"])
-    etl_lookback_days: int = 7
+    etl_lookback_days: int = 1
 
     @field_validator("kafka_bootstrap_servers")
     @classmethod
