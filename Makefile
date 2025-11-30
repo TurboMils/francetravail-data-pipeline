@@ -68,3 +68,6 @@ docker-up:
 
 kafka-create-topics: 
 	bash ./scripts/create_kafka_topics.sh
+
+generate-fernet-key: 
+	@$(BIN)/python scripts/generate_fernet_key.py

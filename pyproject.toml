@@ -16,6 +16,7 @@ dependencies = [
   "plotly",
   "python-dotenv",
   "watchdog",
+  "cryptography",
 ]
 
 [project.optional-dependencies]

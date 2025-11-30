@@ -114,9 +114,70 @@ services:
     networks:
       - ft-network
 
+  # airflow
+  airflow-db:
+    image: postgres:15-alpine
+    container_name: ft-airflow-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: airflow
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow_password
+    volumes:
+      - airflow_db_data:/var/lib/postgresql/data
+    networks:
+      - ft-network
+  
+  airflow-webserver:
+    image: apache/airflow:2.10.2-python3.12
+    container_name: ft-airflow-web
+    restart: unless-stopped
+    depends_on:
+      - airflow-db
+    env_file:
+      - ../.env
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_password@airflow-db:5432/airflow
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+      AIRFLOW_UID: 50000
+      PYTHONPATH: /opt/airflow:/opt/airflow/src
+    volumes:
+      - ../src/airflow_dags:/opt/airflow/dags
+      - ../src:/opt/airflow/src
+    ports:
+      - "8081:8080"
+    command: webserver
+    networks:
+      - ft-network
+  
+  airflow-scheduler:
+    image: apache/airflow:2.10.2-python3.12
+    container_name: ft-airflow-scheduler
+    restart: unless-stopped
+    depends_on:
+      - airflow-db
+    env_file:
+      - ../.env
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_password@airflow-db:5432/airflow
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+      AIRFLOW_UID: 50000
+      PYTHONPATH: /opt/airflow:/opt/airflow/src
+    volumes:
+      - ../src/airflow_dags:/opt/airflow/dags
+      - ../src:/opt/airflow/src
+    command: scheduler
+    networks:
+      - ft-network
+
 networks:
   ft-network:
     driver: bridge
 
 volumes:
+  airflow_db_data:
   postgres_data:
