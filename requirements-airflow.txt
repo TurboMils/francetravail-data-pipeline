@@ -1,0 +1,7 @@
+# requirements-airflow.txt
+
+httpx
+confluent-kafka
+
+pydantic-settings>=2.3,<3
+python-dotenv>=1.0,<2
