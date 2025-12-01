@@ -10,16 +10,16 @@ def main() -> None:
 
     client = FranceTravailClient()
 
-    keyword = "developpeur python"
-    departement = "75"
-    limit = 10
+    keyword = "coiffeur"
+    departement = ""
+    limit = 150
 
     try:
         offres = client.search_offers(
             keyword=keyword,
             departement=departement,
             limit=limit,
-            publiee_depuis=7,
+            publiee_depuis=31,
             sort=1,
         )
     except FranceTravailApiError as exc:

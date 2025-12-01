@@ -64,4 +64,5 @@ class APIClient:
             contrats = sorted(
                 c for c in df["type_contrat"].dropna().astype(str).unique().tolist() if c.strip()
             )
+        
         return deps, contrats

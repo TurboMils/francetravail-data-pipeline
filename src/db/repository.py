@@ -143,6 +143,7 @@ class OfferRepository:
 
         if departement:
             stmt = stmt.where(Offre.departement == departement)
+            
 
         # total avant pagination
         total = self.session.execute(

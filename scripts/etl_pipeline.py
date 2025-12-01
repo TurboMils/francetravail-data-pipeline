@@ -19,9 +19,9 @@ from etl.transformers.validator import validate_offer
 
 logger = get_logger(__name__)
 
-etl_default_departments = [""]  # Pas de Field() ici si ce n'est pas dans un modèle Pydantic
+etl_default_departments = [""]
 etl_default_keywords = [
-    "cloud", "data", "python", "ia", "devops"
+    "python"
 ]  
 
 def run_etl(limit: int) -> None:
@@ -39,7 +39,7 @@ def run_etl(limit: int) -> None:
             keyword=keywords,
             departement=departements,
             limit=limit,
-            publiee_depuis=7,
+            publiee_depuis=31,
             sort=1,
         )
     except FranceTravailApiError as exc:
