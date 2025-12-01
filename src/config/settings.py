@@ -129,7 +129,7 @@ class Settings(BaseSettings):
     etl_catchup: bool = False
     etl_max_active_runs: int = 1
 
-    etl_default_departments: list[str] = Field(default_factory=lambda: ["75", "92", "93", "94"])
+    etl_default_departments: list[str] = Field(default_factory=lambda: [""])
     etl_default_contract_types: list[str] = Field(default_factory=lambda: ["CDI", "CDD"])
     etl_lookback_days: int = 1
 

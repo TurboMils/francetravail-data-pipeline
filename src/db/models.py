@@ -36,6 +36,8 @@ class Offre(Base):
 
     # 6. Lieu (libellé)
     lieu_travail: Mapped[str | None] = mapped_column(String(255))
+    
+    entreprise_nom: Mapped[str | None] = mapped_column(String(200))
 
     # 7. Code ROME
     rome_code: Mapped[str | None] = mapped_column(String(10))
@@ -45,6 +47,10 @@ class Offre(Base):
 
     # 9. Type de contrat
     type_contrat: Mapped[str | None] = mapped_column(String(20))
+    type_contrat_libelle: Mapped[str | None] = mapped_column(String(100))
+    
+    experience_libelle: Mapped[str | None] = mapped_column(String(100))
+    experience_commentaire: Mapped[str | None] = mapped_column(String(200))
 
     # 10. Salaire (libellé)
     salaire_libelle: Mapped[str | None] = mapped_column(String(255))
@@ -62,26 +68,3 @@ class Offre(Base):
     def __repr__(self) -> str:
         return f"<Offre(id={self.id}, intitule={self.intitule!r})>"
     
-
-class IngestionLog(Base):
-    """Modèle pour tracker les ingestions ETL."""
-
-    __tablename__ = "ingestion_logs"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    timestamp: Mapped[datetime] = mapped_column(
-        DateTime,
-        nullable=False,
-        server_default=text("CURRENT_TIMESTAMP"),
-    )
-    nb_offres_extraites: Mapped[int | None] = mapped_column(Integer)
-    nb_offres_inserees: Mapped[int | None] = mapped_column(Integer)
-    nb_offres_mises_a_jour: Mapped[int | None] = mapped_column(Integer)
-    nb_erreurs: Mapped[int | None] = mapped_column(Integer)
-    duree_secondes: Mapped[float | None] = mapped_column(DECIMAL(10, 2))
-    statut: Mapped[str | None] = mapped_column(String(20))
-    message_erreur: Mapped[str | None] = mapped_column(Text)
-    parametres: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
-
-    def __repr__(self) -> str:
-        return f"<IngestionLog(id={self.id}, timestamp={self.timestamp}, statut={self.statut})>"

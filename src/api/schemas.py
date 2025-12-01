@@ -8,7 +8,7 @@ class Offer(BaseModel):
     """Schéma Pydantic pour une offre d'emploi."""
 
     model_config = ConfigDict(from_attributes=True)
-
+            
     id: str
     intitule: str
     description: str | None
@@ -18,8 +18,13 @@ class Offer(BaseModel):
     rome_code: str | None
     rome_libelle: str | None
     type_contrat: str | None
+    type_contrat_libelle: str | None
+    entreprise_nom: str | None
+    experience_libelle: str | None
+    experience_commentaire: str | None
     salaire_libelle: str | None
     departement: str | None
+    
 
 
 class OfferListResponse(BaseModel):
@@ -35,7 +40,7 @@ class OfferSearchRequest(BaseModel):
     """Schéma Pydantic pour la requête de recherche d'offres."""
 
     keyword: str | None = None
-    departement: str | None = None  # pour plus tard
+    departement: str | None = None
     rome_code: str | None = None
     type_contrat: str | None = None
     page: int = 1

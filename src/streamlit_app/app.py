@@ -76,21 +76,27 @@ if df_offers.empty:
     st.info("Aucune offre trouvée avec les critères sélectionnés.")
     st.stop()
 
-
 colonne_affichage = [
     "id",
     "intitule",
+    "description",
     "lieu_travail",
     "departement",
     "type_contrat",
+    "type_contrat_libelle",
+    "entreprise_nom",
+    "experience_libelle",
+    "experience_commentaire",
     "salaire_libelle",
-    "date_creation",
+    "date_actualisation",
     "rome_code",
+    
+    
 ]
 cols_existantes = [col for col in colonne_affichage if col in df_offers.columns]
 
 st.dataframe(
-    df_offers[cols_existantes].sort_values(by="date_creation", ascending=False),
+    df_offers[cols_existantes].sort_values(by="date_actualisation", ascending=False),
     width="stretch",
     height=600,
 )

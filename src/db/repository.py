@@ -20,27 +20,27 @@ class OfferRepository:
         """Mappe une offre API brute -> Dict de colonnes Offre."""
         lieu_travail_obj = raw.get("lieuTravail") or {}
         lieu_travail_libelle = lieu_travail_obj.get("libelle")
-        departement = lieu_travail_obj.get("departement")
+        departement = lieu_travail_libelle[:2] if lieu_travail_libelle and len(lieu_travail_libelle) >= 2 else None
         salaire = raw.get("salaire") or {}
-        salaire_libelle = (
-            salaire.get("libelle")
-            or salaire.get("commentaire")
-            or salaire.get("complement")
-            or None
-        )
+        salaire_libelle = salaire.get("libelle") or salaire.get("commentaire") or None
 
         return {
             "id": raw.get("id") or raw.get("idOffre"),
             "intitule": raw.get("intitule"),
             "description": raw.get("description"),
-            "date_creation": raw.get("dateCreation"),
+            "date_creation": raw.get("dateCreation"),      
             "date_actualisation": raw.get("dateActualisation"),
             "lieu_travail": lieu_travail_libelle,
             "rome_code": raw.get("romeCode"),
             "rome_libelle": raw.get("romeLibelle"),
             "type_contrat": raw.get("typeContrat"),
+            "type_contrat_libelle": raw.get("typeContratLibelle"),
+            "entreprise_nom": raw.get("entreprise")["nom"] if raw.get("entreprise") else None,
+            "experience_libelle": raw.get("experienceLibelle"),
+            "experience_commentaire": raw.get("experienceCommentaire"),
             "salaire_libelle": salaire_libelle,
             "departement": departement,
+            
         }
 
     def upsert_from_api(self, raw: dict) -> tuple[bool, Offre | None]:
