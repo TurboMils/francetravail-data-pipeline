@@ -39,7 +39,6 @@ services:
       API_HOST: 0.0.0.0
       API_PORT: 8000
       PYTHONPATH: /app/src
-      # IMPORTANT : listener interne Kafka
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     ports:
       - "8000:8000"
@@ -145,6 +144,7 @@ services:
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
       AIRFLOW_UID: 50000
       PYTHONPATH: /opt/airflow/src
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     volumes:
       - ../src/airflow_dags:/opt/airflow/dags
       - ../src:/opt/airflow/src
@@ -171,6 +171,7 @@ services:
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
       AIRFLOW_UID: 50000
       PYTHONPATH: /opt/airflow/src
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     volumes:
       - ../src/airflow_dags:/opt/airflow/dags
       - ../src:/opt/airflow/src

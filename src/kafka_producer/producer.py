@@ -46,9 +46,9 @@ class OfferKafkaProducer:
                     callback=self._delivery_report,
                 )
                 count += 1
-            except BufferError:
+            except BufferError as e:
                 # buffer plein → flush puis retry
-                logger.warning("Producer buffer full, flushing...")
+                logger.warning("Producer buffer full, flushing... : {e}")
                 self._producer.flush()
                 
         self._producer.flush()

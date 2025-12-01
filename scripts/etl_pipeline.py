@@ -63,7 +63,6 @@ def run_etl(limit: int) -> None:
     )
 
     if not cleaned_offers:
-        logger.warning("No valid offers to load. Exiting.")
         return
 
     # ========== Load ==========

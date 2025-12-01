@@ -31,7 +31,6 @@ def main() -> None:
     )
 
     if not offers:
-        logger.warning("No offers returned by API")
         return
 
     # On tronque au count demandé si besoin

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 from typing import Any, Sequence
 
 from confluent_kafka import Producer
@@ -16,13 +17,20 @@ _producer: Producer | None = None
 
 def _create_producer() -> Producer:
     """Crée un producer Kafka configuré à partir des settings."""
+    
+    bootstrap = os.getenv("KAFKA_BOOTSTRAP_SERVERS", settings.kafka_bootstrap_servers)
     conf = {
-        "bootstrap.servers": settings.kafka_bootstrap_servers,
-        "acks": settings.kafka_producer_acks,
+        "bootstrap.servers": bootstrap,
+        "acks": settings.kafka_producer_acks,                  # "all" recommandé
         "retries": settings.kafka_producer_retries,
         "compression.type": settings.kafka_producer_compression_type,
+
+        "enable.idempotence": True,                            # évite les doublons en cas de retry
+        "linger.ms": 50,                                       # batch léger
+        "batch.num.messages": 1000,
+        "message.timeout.ms": 30000,                           # 30s avant timeout local
     }
-    logger.info("Creating Kafka producer with bootstrap.servers=%s", conf["bootstrap.servers"])
+    logger.info("Creating Kafka producer with bootstrap.servers=%s", bootstrap)
     return Producer(conf)
 
 
@@ -41,22 +49,32 @@ def publish_offers_batch_to_kafka(
 ) -> int:
     """
     Publie une liste d'offres sur un topic Kafka.
-    - offers : liste de dicts (format brut API ou nettoyé),
+    - offers : liste de dicts,
     - topic : nom du topic,
     - key_field : champ utilisé comme clé (pour la partition), ex: "id".
-    Retourne le nombre de messages envoyés.
+    Retourne le nombre de messages envoyés (produced).
     """
     producer = get_producer()
     sent = 0
+    error_count = 0
 
     def delivery_report(err, msg):
+        nonlocal error_count
         if err is not None:
+            error_count += 1
             logger.error(
-                "Kafka delivery failed for %s [%d] at offset %s: %s",
+                "Kafka delivery failed for %s [%s] at offset %s: %s",
                 msg.topic(),
                 msg.partition(),
                 msg.offset(),
                 err,
+            )
+        else:
+            logger.debug(
+                "Kafka message delivered to %s [%s] at offset %s",
+                msg.topic(),
+                msg.partition(),
+                msg.offset(),
             )
 
     for offer in offers:
@@ -72,9 +90,8 @@ def publish_offers_batch_to_kafka(
                 callback=delivery_report,
             )
             sent += 1
-        except BufferError:
-            # Buffer plein : flush et réessaye une fois
-            logger.warning("Kafka local queue full, flushing producer")
+        except BufferError as e:
+            logger.warning("Kafka local queue full, flushing producer: %s", e)
             producer.flush()
             try:
                 producer.produce(
@@ -84,11 +101,22 @@ def publish_offers_batch_to_kafka(
                     callback=delivery_report,
                 )
                 sent += 1
-            except Exception as e:
-                logger.exception("Failed to publish offer to Kafka after flush (id=%s)", offer.get("id"))
-        except Exception as e:
+            except Exception:
+                logger.exception(
+                    "Failed to publish offer to Kafka after flush (id=%s)",
+                    offer.get("id"),
+                )
+        except Exception:
             logger.exception("Failed to publish offer to Kafka (id=%s)", offer.get("id"))
 
-    producer.flush()
+    producer.flush(60)
+
+    if error_count > 0:
+        logger.error(
+            "Kafka publish finished with %d delivery errors on topic '%s'",
+            error_count,
+            topic,
+        )
+
     logger.info("Published %d offers to Kafka topic '%s'", sent, topic)
     return sent
