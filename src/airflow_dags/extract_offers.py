@@ -36,6 +36,7 @@ def task_extract_and_publish(**context) -> dict:
     Retourne un dict avec les stats, stocké en XCom.
     """
     departements = ",".join(settings.etl_default_departments) if settings.etl_default_departments else None
+    keywords = ",".join(settings.etl_default_keywords) if settings.etl_default_keywords else None
     logger.info("Extracting offers for departements: %s", departements or "all")
     
     try:
@@ -43,6 +44,7 @@ def task_extract_and_publish(**context) -> dict:
         logger.info("Connected to France Travail API")
 
         raw_offers = client.search_offers(
+            keyword=keywords,
             departement=departements,
             publiee_depuis=settings.etl_lookback_days,
             limit=settings.france_travail_max_results_per_page,

@@ -8,6 +8,8 @@ Pipeline ETL simple :
 
 import argparse
 
+from pydantic import Field
+
 from config.logging_config import get_logger
 from db.repository import OfferRepository
 from db.sessions import get_session, init_db
@@ -17,21 +19,25 @@ from etl.transformers.validator import validate_offer
 
 logger = get_logger(__name__)
 
+etl_default_departments = [""]  # Pas de Field() ici si ce n'est pas dans un modèle Pydantic
+etl_default_keywords = [
+    "cloud", "data", "python", "ia", "devops"
+]  
 
 def run_etl(limit: int) -> None:
     logger.info("Initializing database...")
     init_db()
 
     client = FranceTravailClient()
-
-    keyword = "developpeur python"
-    departement = "75"
+    departements = ",".join(etl_default_departments) if etl_default_departments else None
+    keywords = " ".join(etl_default_keywords) if etl_default_keywords else None
+    print(f"Running ETL with limit={limit}, departements={departements or 'all'}, keywords={keywords or 'none'}")
 
     # ========== Extract ==========
     try:
         raw_offers = client.search_offers(
-            keyword=keyword,
-            departement=departement,
+            keyword=keywords,
+            departement=departements,
             limit=limit,
             publiee_depuis=7,
             sort=1,
@@ -55,6 +61,7 @@ def run_etl(limit: int) -> None:
 
         cleaned = clean_offer(raw)
         cleaned_offers.append(cleaned)
+        print(f"Cleaned offer id={cleaned.get('id')} title={cleaned.get('intitule')}")
 
     logger.info(
         "Transform step complete: %d cleaned offers, %d invalid skipped",

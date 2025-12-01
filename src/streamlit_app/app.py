@@ -90,8 +90,6 @@ colonne_affichage = [
     "salaire_libelle",
     "date_actualisation",
     "rome_code",
-    
-    
 ]
 cols_existantes = [col for col in colonne_affichage if col in df_offers.columns]
 

@@ -65,6 +65,8 @@ class OfferKafkaConsumer:
     def run(self) -> None:
         logger.info("Starting Kafka consumer, subscribing to %s", self._topic_raw)
         self._consumer.subscribe([self._topic_raw])
+        
+        message_count = 0
 
         def _signal_handler(sig, frame):
             logger.info("Signal %s received, stopping consumer...", sig)
@@ -80,6 +82,9 @@ class OfferKafkaConsumer:
             if msg.error():
                 logger.error("Consumer error: %s", msg.error())
                 continue
+            
+            message_count += 1
+            logger.info("📨 Received message #%d", message_count)
 
             try:
                 raw_json = msg.value().decode("utf-8")
@@ -96,14 +101,19 @@ class OfferKafkaConsumer:
                 # 2) Persistence
                 with get_session() as db:
                     repo = OfferRepository(db)
-                    repo.upsert_from_api(cleaned)
+                    created, instance = repo.upsert_from_api(cleaned)
+                    logger.info("Upsert result: created=%s, id=%s", created, instance.id if instance else None)
                     db.commit()
+                    logger.info("Committed to database")
 
                 # 3) Commit si tout OK
                 self._consumer.commit(message=msg)
+                
+                logger.info("✅ Successfully processed message #%d", message_count)
 
             except Exception as e:
                 logger.exception("Error processing message, sending to DLQ")
+                logger.exception("❌ Error processing message #%d", message_count)
                 self._send_to_dlq(msg, str(e))
                 self._consumer.commit(message=msg)
 

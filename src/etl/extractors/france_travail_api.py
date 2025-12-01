@@ -33,7 +33,7 @@ class FranceTravailClient:
         self,
         keyword: str | None = None,
         departement: str | None = None,
-        limit: int = 10,
+        limit: int = 150,
         publiee_depuis: int | None = 7,
         sort: int = 1,
     ) -> list[dict[str, Any]]:
@@ -58,7 +58,7 @@ class FranceTravailClient:
             "sort": sort,
         }
         if keyword:
-            params["motCle"] = keyword
+            params["motsCles"] = keyword
         if departement:
             params["departement"] = departement
         if publiee_depuis is not None:

@@ -21,8 +21,6 @@ class OfferRepository:
         lieu_travail_obj = raw.get("lieuTravail") or {}
         lieu_travail_libelle = lieu_travail_obj.get("libelle")
         departement = lieu_travail_libelle[:2] if lieu_travail_libelle and len(lieu_travail_libelle) >= 2 else None
-        salaire = raw.get("salaire") or {}
-        salaire_libelle = salaire.get("libelle") or salaire.get("commentaire") or None
 
         return {
             "id": raw.get("id") or raw.get("idOffre"),
@@ -30,15 +28,15 @@ class OfferRepository:
             "description": raw.get("description"),
             "date_creation": raw.get("dateCreation"),      
             "date_actualisation": raw.get("dateActualisation"),
-            "lieu_travail": lieu_travail_libelle,
+            "lieu_travail": raw.get("lieuTravail", {}).get("libelle"),
             "rome_code": raw.get("romeCode"),
             "rome_libelle": raw.get("romeLibelle"),
             "type_contrat": raw.get("typeContrat"),
             "type_contrat_libelle": raw.get("typeContratLibelle"),
-            "entreprise_nom": raw.get("entreprise")["nom"] if raw.get("entreprise") else None,
+            "entreprise_nom": raw.get("entreprise", {}).get("nom"),
             "experience_libelle": raw.get("experienceLibelle"),
             "experience_commentaire": raw.get("experienceCommentaire"),
-            "salaire_libelle": salaire_libelle,
+            "salaire_libelle": raw.get("salaire", {}).get("libelle") or raw.get("salaire", {}).get("commentaire"),
             "departement": departement,
             
         }

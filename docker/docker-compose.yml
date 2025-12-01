@@ -22,6 +22,26 @@ services:
       timeout: 5s
       retries: 5
 
+  db-init:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: ft-db-init
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ../.env
+    environment:
+      POSTGRES_HOST: postgres
+      PYTHONPATH: /app/src
+    volumes:
+      - ../src:/app/src
+    command: python -m db.init_db
+    networks:
+      - ft-network
+    restart: "no"  # Ne redémarre pas une fois terminé
+
   # FastAPI
   api:
     build:
@@ -32,6 +52,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      db-init:
+        condition: service_completed_successfully  
     env_file:
       - ../.env
     environment:
@@ -112,6 +134,64 @@ services:
       - "29092:29092" # optionnel pour debug
     networks:
       - ft-network
+  
+  kafka-consumer:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: ft-kafka-consumer
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      db-init:
+        condition: service_completed_successfully
+    env_file:
+      - ../.env
+    environment:
+      POSTGRES_HOST: postgres
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      PYTHONPATH: /app/src
+    volumes:
+      - ../src:/app/src
+    command: python -m kafka_consumer.consumer
+    networks:
+      - ft-network
+
+  airflow-init:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.airflow
+    container_name: ft-airflow-init
+    depends_on:
+      airflow-db:
+        condition: service_started
+    env_file:
+      - ../.env
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_password@airflow-db:5432/airflow
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
+      AIRFLOW_UID: 50000clear
+      _AIRFLOW_DB_MIGRATE: 'true'
+      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_WWW_USER_USERNAME: admin
+      _AIRFLOW_WWW_USER_PASSWORD: admin
+    volumes:
+      - ../src/airflow_dags:/opt/airflow/dags
+      - ../src:/opt/airflow/src
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db migrate
+        airflow users create --username admin --firstname Admin --lastname User --role Admin --email admin@example.com --password admin || echo "User already exists"
+    networks:
+      - ft-network
+    restart: "no"
 
   # airflow
   airflow-db:
@@ -134,7 +214,12 @@ services:
     container_name: ft-airflow-web
     restart: unless-stopped
     depends_on:
-      - airflow-db
+      airflow-db:
+        condition: service_started
+      airflow-init:
+        condition: service_completed_successfully  
+      db-init:
+        condition: service_completed_successfully
     env_file:
       - ../.env
     environment:
@@ -161,7 +246,12 @@ services:
     container_name: ft-airflow-scheduler
     restart: unless-stopped
     depends_on:
-      - airflow-db
+      airflow-db:
+        condition: service_started
+      airflow-init:
+        condition: service_completed_successfully  
+      db-init:
+        condition: service_completed_successfully
     env_file:
       - ../.env
     environment:

@@ -130,8 +130,10 @@ class Settings(BaseSettings):
     etl_max_active_runs: int = 1
 
     etl_default_departments: list[str] = Field(default_factory=lambda: [""])
+    etl_default_keywords: list[str] = Field(default_factory=lambda: ["cloud", "data", "python", "ia", "devops"]) 
+
     etl_default_contract_types: list[str] = Field(default_factory=lambda: ["CDI", "CDD"])
-    etl_lookback_days: int = 1
+    etl_lookback_days: int = 14
 
     @field_validator("kafka_bootstrap_servers")
     @classmethod
