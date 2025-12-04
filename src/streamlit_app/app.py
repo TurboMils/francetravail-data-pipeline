@@ -533,7 +533,7 @@ with tab1:
         # Liste des offres
         st.subheader(f"📋 {len(df_offers)} offres trouvées")
 
-        for offre in df_offers.iterrows():
+        for _, offre in df_offers.iterrows():
             display_offer_card(offre)
             st.markdown("---")
 
