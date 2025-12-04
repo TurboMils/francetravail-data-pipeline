@@ -1,11 +1,12 @@
 # francetravail-data-pipeline
 
-# Streamlit UI
+## Streamlit UI
 ![alt text](image.png)
 
+## Streamlit Dashbard Statistics
 
 ![alt text](image-3.png)
 
-# Airflow 
+## Airflow 
 
 ![alt text](image-1.png)
