@@ -296,8 +296,8 @@ def display_offer_card(offre: pd.Series) -> None:
             try:
                 date_str = pd.to_datetime(offre["date_creation"]).strftime("%d/%m/%Y")
                 st.caption(f"🔄 {date_str}")
-            except:
-                pass
+            except (TypeError, ValueError) as e:
+                logger.debug(f"Date parsing date_creation={offre.get('date_creation')!r}: {e}")
 
 
 # ============================================================================

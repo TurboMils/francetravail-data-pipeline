@@ -60,7 +60,6 @@ class APIClient:
         limit: int = 200,
         date_from: str | None = None,
     ) -> pd.DataFrame:
-
         payload = {
             "keyword": keyword,
             "departement": departement,
@@ -95,24 +94,29 @@ class APIClient:
 
             return df
 
-        except requests.Timeout:
+        except requests.Timeout as e:
+            # Pas de e.response garanti sur Timeout
             logger.error("Request timeout - API took too long to respond")
-            raise Exception("⏱️ La requête a pris trop de temps. Réessayez avec moins de résultats.")
+            raise Exception(
+                "La requête a pris trop de temps. Réessayez avec moins de résultats."
+            ) from e
 
         except requests.HTTPError as e:
-            if e.response.status_code == 422:
+            status_code = e.response.status_code if e.response is not None else "unknown"
+            if e.response is not None and e.response.status_code == 422:
                 logger.error("Validation error in request")
-                raise Exception("❌ Erreur de validation. Vérifiez vos filtres.")
-            elif e.response.status_code == 404:
+                raise Exception("Erreur de validation. Vérifiez vos filtres.") from e
+            elif e.response is not None and e.response.status_code == 404:
                 logger.error("Endpoint not found")
-                raise Exception("❌ L'API n'est pas accessible. Vérifiez la configuration.")
+                raise Exception("L'API n'est pas accessible. Vérifiez la configuration.") from e
             else:
                 logger.error(f"HTTP error: {e}")
-                raise Exception(f"❌ Erreur HTTP {e.response.status_code}")
+                raise Exception(f"Erreur HTTP {status_code}") from e
 
         except requests.RequestException as e:
-            logger.error(f"Request failed: {e}")
-            raise Exception(f"❌ Erreur de connexion à l'API : {str(e)}")
+            # Erreurs réseau génériques (connexion refusée, DNS, etc.)
+            logger.error(f"Request error: {e}")
+            raise Exception(f"Erreur de connexion à l'API : {str(e)}") from e
 
     @lru_cache(maxsize=10)  # Cache avec @lru_cache pour éviter des appels répétés
     def load_filters_values(self) -> tuple[list[str], list[str]]:
