@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from datetime import date, timedelta
+from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -115,6 +117,7 @@ class OfferRepository:
         type_contrat: str | None,
         page: int,
         size: int,
+        date_from: str | None = None,
     ) -> tuple[list[Offre], int]:
         """
         Recherche naïve :
@@ -143,8 +146,9 @@ class OfferRepository:
 
         if departement:
             stmt = stmt.where(Offre.departement == departement)
+        if date_from:
+            stmt = stmt.where(Offre.date_creation >= date_from)
             
-
         # total avant pagination
         total = self.session.execute(
             stmt.with_only_columns(func.count(Offre.id)).order_by(None)
@@ -155,3 +159,83 @@ class OfferRepository:
 
         items = list(self.session.execute(stmt).scalars().all())
         return items, total
+    
+    def get_global_stats(self) -> dict[str, Any]:
+        total_offers = self.session.execute(
+            select(func.count(Offre.id))
+        ).scalar_one()
+        
+        total_companies = self.session.execute(
+            select(func.count(func.distinct(Offre.entreprise_nom)))
+        ).scalar_one()
+        
+        first_date, last_date = self.session.execute(
+            select(func.min(Offre.date_creation), func.max(Offre.date_creation))
+        ).one()
+        
+        by_type_rows = self.session.execute(
+            select(Offre.type_contrat, func.count(Offre.id).label("count"))
+            .group_by(Offre.type_contrat)
+            .order_by(func.count(Offre.id).desc())
+        ).all() 
+        
+        by_type_contrat = [
+            {"type_contrat": type_contrat, "count": count} 
+            for type_contrat, count in by_type_rows
+        ]
+
+        return {
+            "total_offers": total_offers,
+            "total_companies": total_companies,
+            "first_date": first_date,
+            "last_date": last_date,
+            "by_type_contrat": by_type_contrat,
+        }
+    def get_timeline_stats(self, days: int = 30) -> list[dict[str, Any]]:
+        """
+        Timeline du nombre d'offres par jour sur les N derniers jours.
+        Retourne une liste de {date, count}.
+        """
+        if days <= 0:
+            days = 30
+
+        start_date = date.today() - timedelta(days=days - 1)
+
+        rows = self.session.execute(
+            select(
+                func.date(Offre.date_creation).label("date"),
+                func.count(Offre.id).label("count"),
+            )
+            .where(Offre.date_creation >= start_date)
+            .group_by(func.date(Offre.date_creation))
+            .order_by(func.date(Offre.date_creation))
+        ).all()
+
+        return [
+            {"date": row.date, "count": row.count}
+            for row in rows
+        ]
+
+    def get_department_stats(self, limit: int = 20) -> list[dict[str, Any]]:
+        """
+        Top départements par nombre d'offres.
+        Retourne une liste de {departement, count}.
+        """
+        if limit <= 0:
+            limit = 20
+
+        rows = self.session.execute(
+            select(
+                Offre.departement,
+                func.count(Offre.id).label("count"),
+            )
+            .where(Offre.departement.isnot(None))
+            .group_by(Offre.departement)
+            .order_by(func.count(Offre.id).desc())
+            .limit(limit)
+        ).all()
+
+        return [
+            {"departement": dep, "count": count}
+            for dep, count in rows
+        ]

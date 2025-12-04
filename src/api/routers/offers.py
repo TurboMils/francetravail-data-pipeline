@@ -42,6 +42,7 @@ async def search_offers(
         type_contrat=payload.type_contrat,
         page=payload.page,
         size=payload.size, 
+        date_from=payload.date_from,
     )
     return OfferListResponse(
         items=items,

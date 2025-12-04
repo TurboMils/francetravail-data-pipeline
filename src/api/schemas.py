@@ -1,5 +1,7 @@
 # src/api/schemas.py
 from __future__ import annotations
+from datetime import date
+from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -45,3 +47,26 @@ class OfferSearchRequest(BaseModel):
     type_contrat: str | None = None
     page: int = 1
     size: int = 50
+    date_from: str | None = None 
+
+class ContractStats(BaseModel):
+    type_contrat: Optional[str]
+    count: int
+
+
+class GlobalStats(BaseModel):
+    total_offers: int
+    total_companies: int
+    first_date: Optional[date]
+    last_date: Optional[date]
+    by_type_contrat: List[ContractStats]
+
+
+class TimelinePoint(BaseModel):
+    date: date
+    count: int
+
+
+class DepartmentStat(BaseModel):
+    departement: str
+    count: int

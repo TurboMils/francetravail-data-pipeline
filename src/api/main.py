@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routers import offers
+from api.routers import offers, stats
 from config.logging_config import get_logger
 from config.settings import settings
 from db.sessions import init_db
@@ -33,3 +33,4 @@ def health_check():
 
 
 app.include_router(offers.router, prefix="/offers", tags=["offers"])
+app.include_router(stats.router, prefix="/stats", tags=["stats"])
