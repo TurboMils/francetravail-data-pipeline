@@ -1,4 +1,5 @@
 # francetravail-data-pipeline
+[![CI](https://github.com/TurboMils/francetravail-data-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/TurboMils/francetravail-data-pipeline/actions/workflows/ci.yml)
 
 ## Streamlit UI
 ![alt text](image.png)
