@@ -483,7 +483,7 @@ try:
                 keyword=keyword or None,
                 departement=departement_filter,
                 type_contrat=type_contrat_filter,
-                experience = experience_level_filter,
+                experience=experience_level_filter,
                 limit=limit,
                 date_from=date_from,
             )

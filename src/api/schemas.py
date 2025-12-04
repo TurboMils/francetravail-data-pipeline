@@ -30,6 +30,7 @@ class Offer(BaseModel):
 
 class OfferListResponse(BaseModel):
     """Schéma Pydantic pour la réponse de liste d'offres."""
+
     items: list[Offer]
     total: int
     page: int
@@ -69,6 +70,7 @@ class TimelinePoint(BaseModel):
 class DepartmentStat(BaseModel):
     departement: str
     count: int
+
 
 class FiltersResponse(BaseModel):
     contrat: list[str]

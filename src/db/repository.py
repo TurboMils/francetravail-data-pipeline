@@ -230,50 +230,49 @@ class OfferRepository:
 
         return [{"departement": dep, "count": count} for dep, count in rows]
 
-
     def get_filter_values(self) -> dict[str, list[str]]:
-            """Retourne les valeurs disponibles pour les filtres."""
+        """Retourne les valeurs disponibles pour les filtres."""
 
-            contrat_type = (
-                self.session.execute(
-                    select(Offre.type_contrat)
-                    .where(Offre.type_contrat.isnot(None))
-                    .distinct()
-                    .order_by(Offre.type_contrat)
-                )
-                .scalars()
-                .all()
+        contrat_type = (
+            self.session.execute(
+                select(Offre.type_contrat)
+                .where(Offre.type_contrat.isnot(None))
+                .distinct()
+                .order_by(Offre.type_contrat)
             )
+            .scalars()
+            .all()
+        )
 
-            departements = (
-                self.session.execute(
-                    select(Offre.departement)
-                    .where(Offre.departement.isnot(None))
-                    .distinct()
-                    .order_by(Offre.departement)
-                )
-                .scalars()
-                .all()
+        departements = (
+            self.session.execute(
+                select(Offre.departement)
+                .where(Offre.departement.isnot(None))
+                .distinct()
+                .order_by(Offre.departement)
             )
+            .scalars()
+            .all()
+        )
 
-            experience = (
-                self.session.execute(
-                    select(Offre.experience_code)
-                    .where(Offre.experience_code.isnot(None))
-                    .distinct()
-                    .order_by(Offre.experience_code)
-                )
-                .scalars()
-                .all()
+        experience = (
+            self.session.execute(
+                select(Offre.experience_code)
+                .where(Offre.experience_code.isnot(None))
+                .distinct()
+                .order_by(Offre.experience_code)
             )
+            .scalars()
+            .all()
+        )
 
-            # Nettoyage pour s'assurer qu'on renvoie des str
-            contrat_list = [str(r) for r in contrat_type if r is not None]
-            deps_list = [str(d) for d in departements if d is not None]
-            experience_list = [str(e) for e in experience if e is not None]
+        # Nettoyage pour s'assurer qu'on renvoie des str
+        contrat_list = [str(r) for r in contrat_type if r is not None]
+        deps_list = [str(d) for d in departements if d is not None]
+        experience_list = [str(e) for e in experience if e is not None]
 
-            return {
-                "type_contrat": contrat_list,
-                "experience": experience_list,
-                "departements": deps_list,
-            }
+        return {
+            "type_contrat": contrat_list,
+            "experience": experience_list,
+            "departements": deps_list,
+        }

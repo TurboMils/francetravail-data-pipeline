@@ -28,6 +28,9 @@ jobs:
       - name: Install Python dependencies
         run: |
           make install-dev
+        
+      - name: Format (black/isort/ruff)
+        run: make format
 
       - name: Lint (ruff)
         run: make lint

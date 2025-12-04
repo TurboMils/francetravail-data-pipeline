@@ -18,7 +18,6 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
-
 def get_offer_repository(db: Session = Depends(get_db)) -> OfferRepository:
     """Dépendance FastAPI pour obtenir un repository d'offres."""
     return OfferRepository(db)

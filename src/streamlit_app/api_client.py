@@ -54,7 +54,6 @@ class APIClient:
         data: Any = response.json()
         return cast(dict[str, Any], data)
 
-
     def fetch_offers(
         self,
         keyword: str | None = None,
@@ -146,7 +145,11 @@ class APIClient:
             deps_raw = data.get("departements", [])
             experience_raw = data.get("experience", [])
 
-            if not isinstance(contrat_raw, list) or not isinstance(deps_raw, list) or not isinstance(experience_raw, list):
+            if (
+                not isinstance(contrat_raw, list)
+                or not isinstance(deps_raw, list)
+                or not isinstance(experience_raw, list)
+            ):
                 raise ValueError(
                     "Champs 'type_contrat', 'departements' et 'experience' doivent être des listes."
                 )
@@ -162,7 +165,6 @@ class APIClient:
             logger.error(f"Erreur lors du chargement des filtres: {e}")
             self._filters_cache = ([], [])
             return self._filters_cache
-
 
     def get_statistics(self) -> dict[str, Any]:
         try:
