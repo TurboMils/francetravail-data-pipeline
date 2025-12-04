@@ -17,20 +17,19 @@ class Offer(BaseModel):
     date_creation: str | None
     date_actualisation: str | None
     lieu_travail: str | None
-    rome_code: str | None
     rome_libelle: str | None
     type_contrat: str | None
     type_contrat_libelle: str | None
     entreprise_nom: str | None
     experience_libelle: str | None
     experience_commentaire: str | None
+    experience_code: str | None
     salaire_libelle: str | None
     departement: str | None
 
 
 class OfferListResponse(BaseModel):
     """Schéma Pydantic pour la réponse de liste d'offres."""
-
     items: list[Offer]
     total: int
     page: int
@@ -42,7 +41,7 @@ class OfferSearchRequest(BaseModel):
 
     keyword: str | None = None
     departement: str | None = None
-    rome_code: str | None = None
+    experience_code: str | None = None
     type_contrat: str | None = None
     page: int = 1
     size: int = 50
@@ -70,3 +69,8 @@ class TimelinePoint(BaseModel):
 class DepartmentStat(BaseModel):
     departement: str
     count: int
+
+class FiltersResponse(BaseModel):
+    contrat: list[str]
+    experience: list[str]
+    departements: list[str]

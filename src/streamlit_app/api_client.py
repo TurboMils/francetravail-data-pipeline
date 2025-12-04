@@ -1,14 +1,14 @@
-import logging
 import os
-from functools import lru_cache
-from typing import Any
+from typing import Any, cast
 
 import pandas as pd
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 
-logger = logging.getLogger(__name__)
+from config.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 class APIClient:
@@ -20,6 +20,8 @@ class APIClient:
         self.timeout = timeout
 
         self.session = self._create_session()
+
+        self._filters_cache: tuple[list[str], list[str]] | None = None
 
         logger.info(f"APIClient initialisé - URL: {self.base_url}")
 
@@ -49,21 +51,23 @@ class APIClient:
         """Vérifie le statut de santé de l'API."""
         response = requests.get(f"{self.base_url}/health", timeout=self.timeout)
         response.raise_for_status()
-        return response.json()
+        data: Any = response.json()
+        return cast(dict[str, Any], data)
+
 
     def fetch_offers(
         self,
         keyword: str | None = None,
         departement: str | None = None,
         type_contrat: str | None = None,
-        rome_code: str | None = None,
+        experience: str | None = None,
         limit: int = 200,
         date_from: str | None = None,
     ) -> pd.DataFrame:
         payload = {
             "keyword": keyword,
             "departement": departement,
-            "rome_code": rome_code,
+            "experience": experience,
             "type_contrat": type_contrat,
             "page": 1,
             "size": limit,
@@ -118,51 +122,63 @@ class APIClient:
             logger.error(f"Request error: {e}")
             raise Exception(f"Erreur de connexion à l'API : {str(e)}") from e
 
-    @lru_cache(maxsize=10)  # Cache avec @lru_cache pour éviter des appels répétés
     def load_filters_values(self) -> tuple[list[str], list[str]]:
+        """
+        Charge les listes de valeurs pour les filtres (type contrat, départements, expérience).
+        Résultat mis en cache au niveau de l'instance.
+        """
+        if self._filters_cache is not None:
+            return self._filters_cache
 
         try:
-            logger.info("Loading filter values...")
+            response = self.session.get(
+                f"{self.base_url}/filters",
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
 
-            # Récupérer un échantillon d'offres pour extraire les valeurs
-            df = self.fetch_offers(limit=500)
+            data: Any = response.json()
 
-            if df.empty:
-                logger.warning("No data available for filters")
-                return [], []
+            if not isinstance(data, dict):
+                raise ValueError("Réponse /filters invalide (dict attendu).")
 
-            # Extraire les départements
-            deps: list[str] = []
-            if "departement" in df.columns:
-                deps = sorted(
-                    d
-                    for d in df["departement"].dropna().astype(str).unique().tolist()
-                    if d.strip() and d != "None"
+            contrat_raw = data.get("type_contrat", [])
+            deps_raw = data.get("departements", [])
+            experience_raw = data.get("experience", [])
+
+            if not isinstance(contrat_raw, list) or not isinstance(deps_raw, list) or not isinstance(experience_raw, list):
+                raise ValueError(
+                    "Champs 'type_contrat', 'departements' et 'experience' doivent être des listes."
                 )
 
-            # Extraire les types de contrat
-            contrats: list[str] = []
-            if "type_contrat" in df.columns:
-                contrats = sorted(
-                    c
-                    for c in df["type_contrat"].dropna().astype(str).unique().tolist()
-                    if c.strip() and c != "None"
-                )
+            contrat_type = [str(v) for v in contrat_raw if v is not None]
+            departements = [str(v) for v in deps_raw if v is not None]
+            experience = [str(v) for v in experience_raw if v is not None]
 
-            logger.info(f"Loaded {len(deps)} departments and {len(contrats)} contract types")
+            self._filters_cache = (contrat_type, departements, experience)
+            return self._filters_cache
 
-            return deps, contrats
+        except requests.RequestException as e:
+            logger.error(f"Erreur lors du chargement des filtres: {e}")
+            self._filters_cache = ([], [])
+            return self._filters_cache
 
-        except Exception as e:
-            logger.error(f"Failed to load filters: {e}")
-            return [], []
 
     def get_statistics(self) -> dict[str, Any]:
-
         try:
-            response = self.session.get(f"{self.base_url}/stats/global", timeout=self.timeout)
+            response = self.session.get(
+                f"{self.base_url}/stats/global",
+                timeout=self.timeout,
+            )
             response.raise_for_status()
-            return response.json()
+
+            data: Any = response.json()
+
+            if not isinstance(data, dict):
+                raise ValueError("Réponse /stats/global invalide (dict attendu).")
+
+            return cast(dict[str, Any], data)
+
         except requests.RequestException as e:
             logger.error(f"Failed to get statistics: {e}")
             return {}

@@ -42,6 +42,7 @@ class OfferRepository:
             "entreprise_nom": raw.get("entreprise", {}).get("nom"),
             "experience_libelle": raw.get("experienceLibelle"),
             "experience_commentaire": raw.get("experienceCommentaire"),
+            "experience_code": raw.get("experienceExige"),
             "salaire_libelle": raw.get("salaire", {}).get("libelle")
             or raw.get("salaire", {}).get("commentaire"),
             "departement": departement,
@@ -111,24 +112,17 @@ class OfferRepository:
         items = list(self.session.execute(stmt).scalars().all())
         return items, total
 
-    # Recherche paginée avec filtres
     def search_paginated(
         self,
         *,
         keyword: str | None,
         departement: str | None,
-        rome_code: str | None,
+        experience: str | None,
         type_contrat: str | None,
         page: int,
         size: int,
         date_from: str | None = None,
     ) -> tuple[list[Offre], int]:
-        """
-        Recherche naïve :
-        - keyword sur intitule / description (LIKE)
-        - filtres exacts sur rome_code, type_contrat
-        - departement :on ignore pour l’instant
-        """
         if page < 1:
             page = 1
         if size < 1:
@@ -142,8 +136,8 @@ class OfferRepository:
                 (Offre.intitule.ilike(like_pattern)) | (Offre.description.ilike(like_pattern))
             )
 
-        if rome_code:
-            stmt = stmt.where(Offre.rome_code == rome_code)
+        if experience:
+            stmt = stmt.where(Offre.experience_code == experience)
 
         if type_contrat:
             stmt = stmt.where(Offre.type_contrat == type_contrat)
@@ -235,3 +229,51 @@ class OfferRepository:
         ).all()
 
         return [{"departement": dep, "count": count} for dep, count in rows]
+
+
+    def get_filter_values(self) -> dict[str, list[str]]:
+            """Retourne les valeurs disponibles pour les filtres."""
+
+            contrat_type = (
+                self.session.execute(
+                    select(Offre.type_contrat)
+                    .where(Offre.type_contrat.isnot(None))
+                    .distinct()
+                    .order_by(Offre.type_contrat)
+                )
+                .scalars()
+                .all()
+            )
+
+            departements = (
+                self.session.execute(
+                    select(Offre.departement)
+                    .where(Offre.departement.isnot(None))
+                    .distinct()
+                    .order_by(Offre.departement)
+                )
+                .scalars()
+                .all()
+            )
+
+            experience = (
+                self.session.execute(
+                    select(Offre.experience_code)
+                    .where(Offre.experience_code.isnot(None))
+                    .distinct()
+                    .order_by(Offre.experience_code)
+                )
+                .scalars()
+                .all()
+            )
+
+            # Nettoyage pour s'assurer qu'on renvoie des str
+            contrat_list = [str(r) for r in contrat_type if r is not None]
+            deps_list = [str(d) for d in departements if d is not None]
+            experience_list = [str(e) for e in experience if e is not None]
+
+            return {
+                "type_contrat": contrat_list,
+                "experience": experience_list,
+                "departements": deps_list,
+            }

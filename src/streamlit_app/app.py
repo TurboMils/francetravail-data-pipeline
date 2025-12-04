@@ -1,4 +1,3 @@
-import logging
 import re
 from datetime import datetime, timedelta
 
@@ -7,11 +6,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
+from config.logging_config import get_logger
 from streamlit_app.api_client import APIClient
 
 # Configuration du logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Configuration de la page
 st.set_page_config(
@@ -414,7 +413,7 @@ with st.sidebar:
     # Filtres avancés
     with st.expander("**⚙️ Filtres avancés**", expanded=False):
         try:
-            deps, contrats = api.load_filters_values()
+            deps, contrats, experience = api.load_filters_values()
 
             departement = st.selectbox(
                 "**Département**",
@@ -428,10 +427,17 @@ with st.sidebar:
                 index=0,
             )
 
+            experience_level = st.selectbox(
+                "**Niveau d'expérience**",
+                options=["(Tous)"] + experience,
+                index=0,
+            )
+
         except Exception as e:
             st.error(f"❌ Erreur de chargement des filtres : {e}")
             departement = "(Tous)"
             type_contrat = "(Tous)"
+            experience_level = "(Tous)"
 
     # Autres filtres
     st.markdown("---")
@@ -461,6 +467,7 @@ with st.sidebar:
 # Conversion des filtres
 departement_filter = None if departement == "(Tous)" else departement
 type_contrat_filter = None if type_contrat == "(Tous)" else type_contrat
+experience_level_filter = None if experience_level == "(Tous)" else experience_level
 
 # ============================================================================
 # RECHERCHE DES OFFRES
@@ -476,6 +483,7 @@ try:
                 keyword=keyword or None,
                 departement=departement_filter,
                 type_contrat=type_contrat_filter,
+                experience = experience_level_filter,
                 limit=limit,
                 date_from=date_from,
             )
@@ -583,6 +591,7 @@ with tab3:
                 "entreprise_nom",
                 "lieu_travail",
                 "type_contrat_libelle",
+                "experience_libelle",
                 "date_creation",
             ]
             # Ne garder que les colonnes qui existent

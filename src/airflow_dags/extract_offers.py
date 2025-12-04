@@ -110,7 +110,7 @@ with DAG(
     dag_id=DAG_ID,
     default_args=default_args,
     description="Extraction périodique des offres France Travail et publication vers Kafka",
-    schedule_interval=settings.etl_schedule_interval,
+    schedule=settings.etl_schedule_interval,
     start_date=datetime(2025, 1, 1),
     catchup=settings.etl_catchup,
     max_active_runs=settings.etl_max_active_runs,

@@ -38,7 +38,7 @@ async def search_offers(
     items, total = repo.search_paginated(
         keyword=payload.keyword,
         departement=payload.departement,
-        rome_code=payload.rome_code,
+        experience=payload.experience_code,
         type_contrat=payload.type_contrat,
         page=payload.page,
         size=payload.size,

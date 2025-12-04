@@ -49,6 +49,7 @@ class Offre(Base):
 
     experience_libelle: Mapped[str | None] = mapped_column(String(100))
     experience_commentaire: Mapped[str | None] = mapped_column(String(200))
+    experience_code: Mapped[str | None] = mapped_column(String(10))
 
     # 10. Salaire (libellé)
     salaire_libelle: Mapped[str | None] = mapped_column(String(255))

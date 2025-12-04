@@ -30,13 +30,16 @@ install-dev: venv
 	$(BIN)/pip install -e '.[dev]'
 	@echo "Dépendances production + dev installées"
 
-init-db:
-	PYTHONPATH=src $(BIN)/python scripts/init_db.py
-
-lint:
+lint: venv
 	$(BIN)/ruff check src tests
 	$(BIN)/black --check src tests
 	$(BIN)/isort --check-only src tests
+
+fix: venv
+	$(BIN)/ruff check src tests --fix
+
+type: venv
+	$(BIN)/mypy src
 
 format:
 	$(BIN)/black src tests
@@ -66,8 +69,8 @@ run-consumer:
 produce-offers: 
 	PYTHONPATH=src $(BIN)/python scripts/produce_offers.py --count 100
 
-docker-up:
-	docker-compose -f docker/docker-compose.yml up -d --build
+docker-build:
+	cd docker && docker-compose up -d
 
 kafka-create-topics: 
 	bash ./scripts/create_kafka_topics.sh

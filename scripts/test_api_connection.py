@@ -32,9 +32,8 @@ def main() -> None:
         titre = offre.get("intitule")
         lieu_travail = offre.get("lieuTravail") or {}
         lieu = lieu_travail.get("libelle")
-        rome_code = offre.get("romeCode")
         type_contrat = offre.get("typeContrat")
-        print(f"{i:02d}. id={oid} | {titre} | {lieu} | ROME={rome_code} | contrat={type_contrat}")
+        print(f"{i:02d}. id={oid} | {titre} | {lieu} | contrat={type_contrat}")
     print()
 
 
