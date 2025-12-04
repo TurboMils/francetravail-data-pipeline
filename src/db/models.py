@@ -2,11 +2,9 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from sqlalchemy import DateTime, String, Text, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from typing import Any
 
-from sqlalchemy import Integer, DateTime, Text, String, DECIMAL, func, text
-from sqlalchemy.dialects.postgresql import JSONB
 
 class Base(DeclarativeBase):
     """Base pour tous les modèles."""
@@ -36,7 +34,7 @@ class Offre(Base):
 
     # 6. Lieu (libellé)
     lieu_travail: Mapped[str | None] = mapped_column(String(255))
-    
+
     entreprise_nom: Mapped[str | None] = mapped_column(String(200))
 
     # 7. Code ROME
@@ -48,7 +46,7 @@ class Offre(Base):
     # 9. Type de contrat
     type_contrat: Mapped[str | None] = mapped_column(String(20))
     type_contrat_libelle: Mapped[str | None] = mapped_column(String(100))
-    
+
     experience_libelle: Mapped[str | None] = mapped_column(String(100))
     experience_commentaire: Mapped[str | None] = mapped_column(String(200))
 
@@ -67,4 +65,3 @@ class Offre(Base):
 
     def __repr__(self) -> str:
         return f"<Offre(id={self.id}, intitule={self.intitule!r})>"
-    

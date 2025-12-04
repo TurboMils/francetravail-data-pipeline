@@ -35,10 +35,12 @@ def task_extract_and_publish(**context) -> dict:
     Extrait les offres des dernières 24h et les publie sur Kafka (topic raw).
     Retourne un dict avec les stats, stocké en XCom.
     """
-    departements = ",".join(settings.etl_default_departments) if settings.etl_default_departments else None
+    departements = (
+        ",".join(settings.etl_default_departments) if settings.etl_default_departments else None
+    )
     keywords = ",".join(settings.etl_default_keywords) if settings.etl_default_keywords else None
     logger.info("Extracting offers for departements: %s", departements or "all")
-    
+
     try:
         client = FranceTravailClient()
         logger.info("Connected to France Travail API")
@@ -108,7 +110,7 @@ with DAG(
     dag_id=DAG_ID,
     default_args=default_args,
     description="Extraction périodique des offres France Travail et publication vers Kafka",
-    schedule_interval=settings.etl_schedule_interval, 
+    schedule_interval=settings.etl_schedule_interval,
     start_date=datetime(2025, 1, 1),
     catchup=settings.etl_catchup,
     max_active_runs=settings.etl_max_active_runs,

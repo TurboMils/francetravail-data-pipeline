@@ -3,12 +3,13 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from confluent_kafka import Producer
 
-from config.settings import settings
 from config.logging_config import get_logger
+from config.settings import settings
 
 logger = get_logger(__name__)
 
@@ -17,18 +18,17 @@ _producer: Producer | None = None
 
 def _create_producer() -> Producer:
     """Crée un producer Kafka configuré à partir des settings."""
-    
+
     bootstrap = os.getenv("KAFKA_BOOTSTRAP_SERVERS", settings.kafka_bootstrap_servers)
     conf = {
         "bootstrap.servers": bootstrap,
-        "acks": settings.kafka_producer_acks,                  # "all" recommandé
+        "acks": settings.kafka_producer_acks,  # "all" recommandé
         "retries": settings.kafka_producer_retries,
         "compression.type": settings.kafka_producer_compression_type,
-
-        "enable.idempotence": True,                            # évite les doublons en cas de retry
-        "linger.ms": 50,                                       # batch léger
+        "enable.idempotence": True,  # évite les doublons en cas de retry
+        "linger.ms": 50,  # batch léger
         "batch.num.messages": 1000,
-        "message.timeout.ms": 30000,                           # 30s avant timeout local
+        "message.timeout.ms": 30000,  # 30s avant timeout local
     }
     logger.info("Creating Kafka producer with bootstrap.servers=%s", bootstrap)
     return Producer(conf)

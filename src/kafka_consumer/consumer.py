@@ -4,7 +4,6 @@ from __future__ import annotations
 import json
 import os
 import signal
-import sys
 from typing import Any
 
 from confluent_kafka import Consumer, Producer
@@ -14,16 +13,15 @@ from config.settings import settings
 from db.repository import OfferRepository
 from db.sessions import get_session
 from etl.transformers.cleaner import clean_offer
-from etl.transformers.validator import validate_offer 
+from etl.transformers.validator import validate_offer
 
 logger = get_logger(__name__)
 
 
 class OfferKafkaConsumer:
     def __init__(self) -> None:
-        
-        bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS", 
-                                      settings.kafka_bootstrap_servers)
+
+        bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS", settings.kafka_bootstrap_servers)
         consumer_conf = {
             "bootstrap.servers": bootstrap_servers,
             "group.id": settings.kafka_consumer_group,
@@ -65,7 +63,7 @@ class OfferKafkaConsumer:
     def run(self) -> None:
         logger.info("Starting Kafka consumer, subscribing to %s", self._topic_raw)
         self._consumer.subscribe([self._topic_raw])
-        
+
         message_count = 0
 
         def _signal_handler(sig, frame):
@@ -82,7 +80,7 @@ class OfferKafkaConsumer:
             if msg.error():
                 logger.error("Consumer error: %s", msg.error())
                 continue
-            
+
             message_count += 1
             logger.info("📨 Received message #%d", message_count)
 
@@ -93,7 +91,9 @@ class OfferKafkaConsumer:
                 # 1) Clean + validate
                 cleaned = clean_offer(raw_offer)
                 if not validate_offer(cleaned):
-                    logger.warning("Offer failed validation, sending to DLQ (id=%s)", cleaned.get("id"))
+                    logger.warning(
+                        "Offer failed validation, sending to DLQ (id=%s)", cleaned.get("id")
+                    )
                     self._send_to_dlq(msg, "validation_failed")
                     self._consumer.commit(message=msg)
                     continue
@@ -102,13 +102,17 @@ class OfferKafkaConsumer:
                 with get_session() as db:
                     repo = OfferRepository(db)
                     created, instance = repo.upsert_from_api(cleaned)
-                    logger.info("Upsert result: created=%s, id=%s", created, instance.id if instance else None)
+                    logger.info(
+                        "Upsert result: created=%s, id=%s",
+                        created,
+                        instance.id if instance else None,
+                    )
                     db.commit()
                     logger.info("Committed to database")
 
                 # 3) Commit si tout OK
                 self._consumer.commit(message=msg)
-                
+
                 logger.info("✅ Successfully processed message #%d", message_count)
 
             except Exception as e:

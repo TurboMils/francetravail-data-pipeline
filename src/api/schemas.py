@@ -1,7 +1,7 @@
 # src/api/schemas.py
 from __future__ import annotations
+
 from datetime import date
-from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -10,7 +10,7 @@ class Offer(BaseModel):
     """Schéma Pydantic pour une offre d'emploi."""
 
     model_config = ConfigDict(from_attributes=True)
-            
+
     id: str
     intitule: str
     description: str | None
@@ -26,7 +26,6 @@ class Offer(BaseModel):
     experience_commentaire: str | None
     salaire_libelle: str | None
     departement: str | None
-    
 
 
 class OfferListResponse(BaseModel):
@@ -47,19 +46,20 @@ class OfferSearchRequest(BaseModel):
     type_contrat: str | None = None
     page: int = 1
     size: int = 50
-    date_from: str | None = None 
+    date_from: str | None = None
+
 
 class ContractStats(BaseModel):
-    type_contrat: Optional[str]
+    type_contrat: str | None
     count: int
 
 
 class GlobalStats(BaseModel):
     total_offers: int
     total_companies: int
-    first_date: Optional[date]
-    last_date: Optional[date]
-    by_type_contrat: List[ContractStats]
+    first_date: date | None
+    last_date: date | None
+    by_type_contrat: list[ContractStats]
 
 
 class TimelinePoint(BaseModel):
