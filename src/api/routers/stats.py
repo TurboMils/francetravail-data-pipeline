@@ -10,10 +10,7 @@ from api.schemas import (
 )
 from db.repository import OfferRepository
 
-router = APIRouter(
-    prefix="/stats",
-    tags=["stats"],
-)
+router = APIRouter()
 
 
 @router.get("/global", response_model=GlobalStats)

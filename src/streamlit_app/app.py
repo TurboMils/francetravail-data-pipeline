@@ -9,6 +9,12 @@ import streamlit as st
 from config.logging_config import get_logger
 from streamlit_app.api_client import APIClient
 
+EXPERIENCE_LABELS: dict[str, str] = {
+    "D": "Débutant",
+    "E": "Expérimenté",
+    "S": "Confirmé",
+}
+
 # Configuration du logging
 logger = get_logger(__name__)
 
@@ -23,7 +29,18 @@ st.set_page_config(
 # ============================================================================
 # FONCTIONS UTILITAIRES
 # ============================================================================
-
+def removeTousfromFilter(items):
+    if not items:
+        return None
+    
+    if items == ["(Tous)"]:
+        return None
+    
+    if "(Tous)" not in items:
+        return items
+    
+    cleaned = [item for item in items if item != "(Tous)"]
+    return cleaned if cleaned else None
 
 def simple_markdown_format(text: str) -> str:
     """
@@ -414,30 +431,31 @@ with st.sidebar:
     with st.expander("**⚙️ Filtres avancés**", expanded=False):
         try:
             deps, contrats, experience = api.load_filters_values()
-
-            departement = st.selectbox(
+            
+            departement = st.multiselect(
                 "**Département**",
                 options=["(Tous)"] + deps,
-                index=0,
+                default=["(Tous)"],
             )
 
-            type_contrat = st.selectbox(
+            type_contrat = st.multiselect(
                 "**Type de contrat**",
                 options=["(Tous)"] + contrats,
-                index=0,
+                default=["(Tous)"],
             )
 
-            experience_level = st.selectbox(
-                "**Niveau d'expérience**",
+            experience_level = st.multiselect(
+                "Expérience",
                 options=["(Tous)"] + experience,
-                index=0,
+                default=["(Tous)"],
+                format_func=lambda code: EXPERIENCE_LABELS.get(code, code),
             )
 
         except Exception as e:
             st.error(f"❌ Erreur de chargement des filtres : {e}")
-            departement = "(Tous)"
-            type_contrat = "(Tous)"
-            experience_level = "(Tous)"
+            departement = ['(Tous)'] 
+            type_contrat = ['(Tous)'] 
+            experience_level = ['(Tous)'] 
 
     # Autres filtres
     st.markdown("---")
@@ -460,14 +478,14 @@ with st.sidebar:
     # Boutons
     col_btn1, col_btn2 = st.columns(2)
     with col_btn1:
-        recherche_btn = st.button("🔎 Rechercher", type="primary", use_container_width=True)
+        recherche_btn = st.button("🔎 Rechercher", type="primary", width='content')
     with col_btn2:
-        reset_btn = st.button("🔄 Reset", use_container_width=True)
+        reset_btn = st.button("🔄 Reset", width='content')
 
 # Conversion des filtres
-departement_filter = None if departement == "(Tous)" else departement
-type_contrat_filter = None if type_contrat == "(Tous)" else type_contrat
-experience_level_filter = None if experience_level == "(Tous)" else experience_level
+departement_filter = removeTousfromFilter(departement)
+type_contrat_filter = removeTousfromFilter(type_contrat)
+experience_level_filter = removeTousfromFilter(experience_level)
 
 # ============================================================================
 # RECHERCHE DES OFFRES
@@ -480,7 +498,7 @@ try:
             date_from = (datetime.now() - timedelta(days=publiee_depuis)).date().isoformat()
 
             df_offers = api.fetch_offers(
-                keyword=keyword or None,
+                keyword=keyword.split("," or ";" or " ") if keyword else None,
                 departement=departement_filter,
                 type_contrat=type_contrat_filter,
                 experience=experience_level_filter,
@@ -558,19 +576,19 @@ with tab2:
         with col1:
             fig_map = create_department_map(df_offers)
             if fig_map:
-                st.plotly_chart(fig_map, use_container_width=True)
+                st.plotly_chart(fig_map, width='content')
             else:
                 st.info("Pas assez de données pour la carte")
 
         with col2:
             fig_contrat = create_contract_pie_chart(df_offers)
             if fig_contrat:
-                st.plotly_chart(fig_contrat, use_container_width=True)
+                st.plotly_chart(fig_contrat, width='content')
 
         # Timeline
         fig_timeline = create_timeline_chart(df_offers)
         if fig_timeline:
-            st.plotly_chart(fig_timeline, use_container_width=True)
+            st.plotly_chart(fig_timeline, width='content')
 
 # ============================================================================
 # TAB 3: EXPORT

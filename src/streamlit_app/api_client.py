@@ -21,8 +21,6 @@ class APIClient:
 
         self.session = self._create_session()
 
-        self._filters_cache: tuple[list[str], list[str], list[str]] | None = None
-
         logger.info(f"APIClient initialisé - URL: {self.base_url}")
 
     def _create_session(self) -> requests.Session:
@@ -57,9 +55,9 @@ class APIClient:
     def fetch_offers(
         self,
         keyword: str | None = None,
-        departement: str | None = None,
-        type_contrat: str | None = None,
-        experience: str | None = None,
+        departement: list[str] | None = None,
+        type_contrat: list[str] | None = None,
+        experience: list[str] | None = None,
         limit: int = 200,
         date_from: str | None = None,
     ) -> pd.DataFrame:
@@ -126,9 +124,6 @@ class APIClient:
         Charge les listes de valeurs pour les filtres (type contrat, départements, expérience).
         Résultat mis en cache au niveau de l'instance.
         """
-        if self._filters_cache is not None:
-            return self._filters_cache
-
         try:
             response = self.session.get(
                 f"{self.base_url}/filters",
@@ -141,7 +136,7 @@ class APIClient:
             if not isinstance(data, dict):
                 raise ValueError("Réponse /filters invalide (dict attendu).")
 
-            contrat_raw = data.get("type_contrat", [])
+            contrat_raw = data.get("contrat", [])
             deps_raw = data.get("departements", [])
             experience_raw = data.get("experience", [])
 
@@ -151,20 +146,18 @@ class APIClient:
                 or not isinstance(experience_raw, list)
             ):
                 raise ValueError(
-                    "Champs 'type_contrat', 'departements' et 'experience' doivent être des listes."
+                    "Champs 'contrat', 'departements' et 'experience' doivent être des listes."
                 )
 
             contrat_type = [str(v) for v in contrat_raw if v is not None]
             departements = [str(v) for v in deps_raw if v is not None]
             experience = [str(v) for v in experience_raw if v is not None]
 
-            self._filters_cache = (contrat_type, departements, experience)
-            return self._filters_cache
+            return departements, contrat_type, experience
 
         except requests.RequestException as e:
             logger.error(f"Erreur lors du chargement des filtres: {e}")
-            self._filters_cache = ([], [], [])
-            return self._filters_cache
+            return [], [], []
 
     def get_statistics(self) -> dict[str, Any]:
         try:

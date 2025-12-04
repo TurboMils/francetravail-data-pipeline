@@ -6,11 +6,7 @@ from api.dependencies import get_offer_repository
 from api.schemas import FiltersResponse
 from db.repository import OfferRepository
 
-router = APIRouter(
-    prefix="/filters",
-    tags=["filters"],
-)
-
+router = APIRouter()
 
 @router.get("", response_model=FiltersResponse)
 async def get_filters(

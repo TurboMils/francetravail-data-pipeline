@@ -23,7 +23,7 @@ class Offer(BaseModel):
     entreprise_nom: str | None
     experience_libelle: str | None
     experience_commentaire: str | None
-    experience_code: str | None
+    experience: str | None
     salaire_libelle: str | None
     departement: str | None
 
@@ -40,10 +40,10 @@ class OfferListResponse(BaseModel):
 class OfferSearchRequest(BaseModel):
     """Schéma Pydantic pour la requête de recherche d'offres."""
 
-    keyword: str | None = None
-    departement: str | None = None
-    experience_code: str | None = None
-    type_contrat: str | None = None
+    keyword: list[str] | None = None
+    departement: list[str] | None = None
+    experience: list[str] | None = None
+    type_contrat: list[str] | None = None
     page: int = 1
     size: int = 50
     date_from: str | None = None

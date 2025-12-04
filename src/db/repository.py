@@ -5,11 +5,10 @@ from collections.abc import Iterable
 from datetime import date, timedelta
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from db.models import Offre
-
 
 class OfferRepository:
     """Repository basique pour la table offres."""
@@ -42,7 +41,7 @@ class OfferRepository:
             "entreprise_nom": raw.get("entreprise", {}).get("nom"),
             "experience_libelle": raw.get("experienceLibelle"),
             "experience_commentaire": raw.get("experienceCommentaire"),
-            "experience_code": raw.get("experienceExige"),
+            "experience": raw.get("experienceExige"),
             "salaire_libelle": raw.get("salaire", {}).get("libelle")
             or raw.get("salaire", {}).get("commentaire"),
             "departement": departement,
@@ -115,10 +114,10 @@ class OfferRepository:
     def search_paginated(
         self,
         *,
-        keyword: str | None,
-        departement: str | None,
-        experience: str | None,
-        type_contrat: str | None,
+        keyword: list[str] | None,
+        departement: list[str] | None,
+        experience: list[str] | None,
+        type_contrat: list[str] | None,
         page: int,
         size: int,
         date_from: str | None = None,
@@ -129,21 +128,28 @@ class OfferRepository:
             size = 10
 
         stmt = select(Offre)
-
+        
+        # Filtre mots-clés (OR sur tous les mots)
         if keyword:
-            like_pattern = f"%{keyword}%"
-            stmt = stmt.where(
-                (Offre.intitule.ilike(like_pattern)) | (Offre.description.ilike(like_pattern))
-            )
+            like_clauses = list[Any] = []
+            for kw in keyword:
+                kw = kw.strip()
+                if not kw:
+                    continue
+                pattern = f"%{kw}%"
+                like_clauses.append(Offre.intitule.ilike(pattern))
+                like_clauses.append(Offre.description.ilike(pattern))
+            if like_clauses:
+                stmt = stmt.where(or_(*like_clauses))
 
         if experience:
-            stmt = stmt.where(Offre.experience_code == experience)
+            stmt = stmt.where(Offre.experience.in_(experience))
 
         if type_contrat:
-            stmt = stmt.where(Offre.type_contrat == type_contrat)
+            stmt = stmt.where(Offre.type_contrat.in_(type_contrat))
 
         if departement:
-            stmt = stmt.where(Offre.departement == departement)
+            stmt = stmt.where(Offre.departement.in_(departement))
         if date_from:
             stmt = stmt.where(Offre.date_creation >= date_from)
 
@@ -257,10 +263,10 @@ class OfferRepository:
 
         experience = (
             self.session.execute(
-                select(Offre.experience_code)
-                .where(Offre.experience_code.isnot(None))
+                select(Offre.experience)
+                .where(Offre.experience.isnot(None))
                 .distinct()
-                .order_by(Offre.experience_code)
+                .order_by(Offre.experience)
             )
             .scalars()
             .all()
@@ -272,7 +278,7 @@ class OfferRepository:
         experience_list = [str(e) for e in experience if e is not None]
 
         return {
-            "type_contrat": contrat_list,
+            "contrat": contrat_list,
             "experience": experience_list,
             "departements": deps_list,
         }
