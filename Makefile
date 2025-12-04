@@ -1,4 +1,4 @@
-.PHONY: help venv install install-dev lint format test clean run-api run-streamlit run-consumer
+.PHONY: help venv install install-dev lint format test clean run-api run-streamlit run-consumer produce-offers docker-up kafka-create-topics generate-fernet-key airflow-up airflow-down
 
 PYTHON := python3.12
 VENV := .venv
@@ -74,17 +74,6 @@ kafka-create-topics:
 
 generate-fernet-key: 
 	@$(BIN)/python scripts/generate_fernet_key.py
-
-airflow-init: 
-	cd docker && docker-compose up -d airflow-db
-	cd docker && docker-compose run --rm airflow-webserver airflow db upgrade
-	cd docker && docker-compose run --rm airflow-webserver airflow users create \
-	  --username admin \
-	  --password admin \
-	  --firstname Admin \
-	  --lastname User \
-	  --role Admin \
-	  --email admin@example.com
 
 airflow-up: 
 	cd docker && docker-compose up -d airflow-webserver airflow-scheduler
