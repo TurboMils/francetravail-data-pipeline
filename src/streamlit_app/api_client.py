@@ -58,15 +58,16 @@ class APIClient:
         departement: list[str] | None = None,
         type_contrat: list[str] | None = None,
         experience: list[str] | None = None,
-        limit: int = 200,
+        page: int = 1,
+        limit: int = 50,
         date_from: str | None = None,
-    ) -> pd.DataFrame:
+    ) -> tuple[pd.DataFrame, int]:
         payload = {
             "keyword": keyword,
             "departement": departement,
             "experience": experience,
             "type_contrat": type_contrat,
-            "page": 1,
+            "page": page,
             "size": limit,
             "date_from": date_from,
         }
@@ -83,17 +84,21 @@ class APIClient:
             )
             response.raise_for_status()
 
-            data = response.json()
+            data: Any = response.json()
+            if not isinstance(data, dict):
+                raise ValueError("Réponse /offers/search invalide (dict attendu).")
+        
             items = data.get("items", [])
+            total = data.get("total", 0)
 
             if not items:
                 logger.warning("No offers found with current filters")
-                return pd.DataFrame()
+                return pd.DataFrame(), 0
 
             df = pd.DataFrame(items)
-            logger.info(f"Fetched {len(df)} offers successfully")
+            logger.info(f"Fetched {len(df)} offers successfully (page={page}, size={limit}, total={total})")
 
-            return df
+            return df, total
 
         except requests.Timeout as e:
             # Pas de e.response garanti sur Timeout

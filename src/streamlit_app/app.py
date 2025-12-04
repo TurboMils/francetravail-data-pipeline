@@ -26,38 +26,59 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+if st.session_state.get("scroll_top"):
+    st.markdown(
+        """
+        <script>
+        window.scrollTo(0, 0);
+        </script>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.session_state["scroll_top"] = False
+
+
+# Pagination
+DEFAULT_PAGE_SIZE = 50
+
+if "offers_page" not in st.session_state:
+    st.session_state["offers_page"] = 1
+
+if "filters" not in st.session_state:
+    st.session_state["filters"] = {
+        "keyword": None,        # list[str] | None
+        "departement": None,    # list[str] | None
+        "type_contrat": None,   # list[str] | None
+        "experience": None,     # list[str] | None
+        "date_from": None,      # str | None (YYYY-MM-DD)
+    }
+    
+if "scroll_top" not in st.session_state:
+    st.session_state["scroll_top"] = False
+
+
 # ============================================================================
 # FONCTIONS UTILITAIRES
 # ============================================================================
-def removeTousfromFilter(items):
+
+def remove_tous_from_filter(items: list[str] | None) -> list[str] | None:
     if not items:
         return None
-    
     if items == ["(Tous)"]:
         return None
-    
     if "(Tous)" not in items:
         return items
-    
     cleaned = [item for item in items if item != "(Tous)"]
     return cleaned if cleaned else None
 
-def simple_markdown_format(text: str) -> str:
-    """
-    Conversion minimaliste en markdown.
 
-    Amélioration : Regex plus robuste et gestion des cas limites.
-    """
+def simple_markdown_format(text: str) -> str:
     if not text:
         return ""
 
-    # Remplacer les * en début de ligne par des •
     text = re.sub(r"^\*\s+", "• ", text, flags=re.MULTILINE)
-
-    # Ajouter des sauts de ligne après les points finaux suivis de majuscule
     text = re.sub(r"\.\s+(?=[A-Z])", ".\n\n", text)
 
-    # Mettre en gras les titres de sections courants
     sections = [
         "Missions principales",
         "De formation technique",
@@ -75,16 +96,10 @@ def simple_markdown_format(text: str) -> str:
 
 
 def create_department_map(df_offers: pd.DataFrame) -> go.Figure | None:
-    """
-    Crée une carte des départements français.
-
-    Amélioration : Meilleure gestion des erreurs et fallback.
-    """
     if df_offers.empty or "departement" not in df_offers.columns:
         return None
 
     try:
-        # Compter les offres par département
         dept_counts = (
             df_offers.dropna(subset=["departement"])
             .groupby("departement")
@@ -95,7 +110,6 @@ def create_department_map(df_offers: pd.DataFrame) -> go.Figure | None:
         if dept_counts.empty:
             return None
 
-        # Coordonnées approximatives des départements principaux
         department_coords = {
             "75": [48.8566, 2.3522, "Paris"],
             "13": [43.2965, 5.3698, "Bouches-du-Rhône"],
@@ -116,8 +130,7 @@ def create_department_map(df_offers: pd.DataFrame) -> go.Figure | None:
             "06": [43.7044, 7.2619, "Alpes-Maritimes"],
         }
 
-        # Préparer les données
-        map_data = []
+        map_data: list[dict] = []
         for _, row in dept_counts.iterrows():
             dept = str(row["departement"])
             if dept in department_coords:
@@ -137,7 +150,6 @@ def create_department_map(df_offers: pd.DataFrame) -> go.Figure | None:
 
         df_map = pd.DataFrame(map_data)
 
-        # Créer la carte
         fig = px.scatter_mapbox(
             df_map,
             lat="lat",
@@ -155,7 +167,6 @@ def create_department_map(df_offers: pd.DataFrame) -> go.Figure | None:
         )
 
         fig.update_layout(height=500, margin={"r": 0, "t": 40, "l": 0, "b": 0})
-
         return fig
 
     except Exception as e:
@@ -164,11 +175,6 @@ def create_department_map(df_offers: pd.DataFrame) -> go.Figure | None:
 
 
 def create_contract_pie_chart(df_offers: pd.DataFrame) -> go.Figure | None:
-    """
-    Crée un graphique en camembert des types de contrat.
-
-    Amélioration : Gestion des libellés manquants.
-    """
     if df_offers.empty or "type_contrat_libelle" not in df_offers.columns:
         return None
 
@@ -192,7 +198,6 @@ def create_contract_pie_chart(df_offers: pd.DataFrame) -> go.Figure | None:
         )
 
         fig.update_traces(textposition="inside", textinfo="percent+label")
-
         return fig
 
     except Exception as e:
@@ -201,11 +206,6 @@ def create_contract_pie_chart(df_offers: pd.DataFrame) -> go.Figure | None:
 
 
 def create_timeline_chart(df_offers: pd.DataFrame) -> go.Figure | None:
-    """
-    Crée un graphique d'évolution temporelle.
-
-    Amélioration : Meilleure gestion des dates.
-    """
     if df_offers.empty or "date_creation" not in df_offers.columns:
         return None
 
@@ -230,7 +230,6 @@ def create_timeline_chart(df_offers: pd.DataFrame) -> go.Figure | None:
         )
 
         fig.update_layout(height=400, xaxis_title="Date", yaxis_title="Nombre d'offres")
-
         return fig
 
     except Exception as e:
@@ -239,11 +238,6 @@ def create_timeline_chart(df_offers: pd.DataFrame) -> go.Figure | None:
 
 
 def display_stat_card(title: str, value: str | int, subtitle: str = "") -> None:
-    """
-    Affiche une carte de statistique stylée.
-
-    Nouvelle fonction pour réutilisabilité.
-    """
     st.markdown(
         f"""
         <div class="stat-card">
@@ -257,26 +251,17 @@ def display_stat_card(title: str, value: str | int, subtitle: str = "") -> None:
 
 
 def display_offer_card(offre: pd.Series) -> None:
-    """
-    Affiche une carte d'offre.
-
-    Amélioration : Code plus modulaire et réutilisable.
-    """
     col_left, col_right = st.columns([3, 1])
 
     with col_left:
-        # Titre
         st.markdown(f"### {offre.get('intitule', 'Titre non disponible')}")
 
-        # Entreprise
         if offre.get("entreprise_nom"):
             st.markdown(f"**🏢 {offre['entreprise_nom']}**")
 
-        # Localisation
         if offre.get("lieu_travail"):
             st.markdown(f"📍 **Lieu :** {offre['lieu_travail']}")
 
-        # Description avec preview
         if offre.get("description"):
             desc = simple_markdown_format(str(offre["description"]))
             preview = desc[:300] + "..." if len(desc) > 300 else desc
@@ -285,7 +270,6 @@ def display_offer_card(offre: pd.Series) -> None:
                 st.markdown(desc)
 
     with col_right:
-        # Badges
         if offre.get("type_contrat_libelle"):
             st.markdown(
                 f'<span class="badge badge-contract">{offre["type_contrat_libelle"]}</span>',
@@ -304,7 +288,6 @@ def display_offer_card(offre: pd.Series) -> None:
                 unsafe_allow_html=True,
             )
 
-        # Informations supplémentaires
         if offre.get("salaire_libelle"):
             st.info(f"💰 {offre['salaire_libelle']}")
 
@@ -321,16 +304,14 @@ def display_offer_card(offre: pd.Series) -> None:
 # ============================================================================
 
 
-# Client API avec cache
 @st.cache_resource
 def get_api_client() -> APIClient:
-    """Initialise le client API (mis en cache)."""
     return APIClient()
 
 
 api = get_api_client()
 
-# CSS personnalisé (inchangé mais amélioré)
+# CSS
 st.markdown(
     """
     <style>
@@ -420,18 +401,16 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    # Mots-clés
-    keyword = st.text_input(
+    keyword_str = st.text_input(
         "**Mots-clés**",
         placeholder="Ex: développeur python, data engineer...",
         help="Recherche dans le titre et la description",
     )
 
-    # Filtres avancés
     with st.expander("**⚙️ Filtres avancés**", expanded=False):
         try:
             deps, contrats, experience = api.load_filters_values()
-            
+
             departement = st.multiselect(
                 "**Département**",
                 options=["(Tous)"] + deps,
@@ -453,64 +432,88 @@ with st.sidebar:
 
         except Exception as e:
             st.error(f"❌ Erreur de chargement des filtres : {e}")
-            departement = ['(Tous)'] 
-            type_contrat = ['(Tous)'] 
-            experience_level = ['(Tous)'] 
+            departement = ["(Tous)"]
+            type_contrat = ["(Tous)"]
+            experience_level = ["(Tous)"]
 
-    # Autres filtres
     st.markdown("---")
 
-    limit = st.slider(
-        "**📊 Nombre d'offres**",
+    page_size = st.slider(
+        "**📊 Résultats par page**",
         min_value=10,
-        max_value=1000,
-        value=500,
+        max_value=50,
+        value=DEFAULT_PAGE_SIZE,
         step=10,
     )
 
     publiee_depuis = st.selectbox(
         "**📅 Publiées depuis**",
         options=[1, 3, 7, 15, 30],
-        index=0,  # 1 jours par défaut
+        index=0,
         format_func=lambda x: f"{x} jour" if x == 1 else f"{x} jours",
     )
 
-    # Boutons
     col_btn1, col_btn2 = st.columns(2)
     with col_btn1:
-        recherche_btn = st.button("🔎 Rechercher", type="primary", width='content')
+        recherche_btn = st.button("🔎 Rechercher", type="primary", use_container_width=True)
     with col_btn2:
-        reset_btn = st.button("🔄 Reset", width='content')
+        reset_btn = st.button("🔄 Reset", width="content", use_container_width=True)
 
-# Conversion des filtres
-departement_filter = removeTousfromFilter(departement)
-type_contrat_filter = removeTousfromFilter(type_contrat)
-experience_level_filter = removeTousfromFilter(experience_level)
+# Conversion des filtres pour sauvegarde
+
+# keyword -> list[str]
+keyword_list: list[str] | None = None
+if keyword_str:
+    tokens = re.split(r"[;,]\s*|\s+", keyword_str)
+    keyword_list = [t for t in tokens if t]
+
+departement_filter = remove_tous_from_filter(departement)
+type_contrat_filter = remove_tous_from_filter(type_contrat)
+experience_level_filter = remove_tous_from_filter(experience_level)
+date_from_value = (datetime.now() - timedelta(days=publiee_depuis)).date().isoformat()
+
+# Gestion des boutons : on stocke les filtres et on reset la page, puis on rerun
+if reset_btn:
+    st.session_state["filters"] = {
+        "keyword": None,
+        "departement": None,
+        "type_contrat": None,
+        "experience": None,
+        "date_from": None,
+    }
+    st.session_state["offers_page"] = 1
+    st.rerun()
+
+if recherche_btn:
+    st.session_state["filters"] = {
+        "keyword": keyword_list,
+        "departement": departement_filter,
+        "type_contrat": type_contrat_filter,
+        "experience": experience_level_filter,
+        "date_from": date_from_value,
+    }
+    st.session_state["offers_page"] = 1
+    st.rerun()
 
 # ============================================================================
-# RECHERCHE DES OFFRES
+# RECHERCHE DES OFFRES (toujours à partir de l'état)
 # ============================================================================
+
+page = st.session_state["offers_page"]
+filters = st.session_state["filters"]
 
 try:
-    # Déclencher une nouvelle recherche si bouton cliqué ou première visite
-    if "df_offers" not in st.session_state or recherche_btn or reset_btn:
-        with st.spinner("🔍 Recherche en cours..."):
-            date_from = (datetime.now() - timedelta(days=publiee_depuis)).date().isoformat()
-
-            df_offers = api.fetch_offers(
-                keyword=keyword.split("," or ";" or " ") if keyword else None,
-                departement=departement_filter,
-                type_contrat=type_contrat_filter,
-                experience=experience_level_filter,
-                limit=limit,
-                date_from=date_from,
-            )
-
-            st.session_state.df_offers = df_offers
-            logger.info(f"Fetched {len(df_offers)} offers")
-    else:
-        df_offers = st.session_state.df_offers
-
+    with st.spinner("🔍 Recherche en cours..."):
+        df_offers, total = api.fetch_offers(
+            keyword=filters["keyword"],
+            departement=filters["departement"],
+            type_contrat=filters["type_contrat"],
+            experience=filters["experience"],
+            page=page,
+            limit=page_size,
+            date_from=filters["date_from"],
+        )
+        logger.info(f"Fetched {len(df_offers)} offers (page={page}, size={page_size}, total={total})")
 except Exception as e:
     st.error(f"❌ {str(e)}")
     st.stop()
@@ -529,22 +532,26 @@ with tab1:
     if df_offers.empty:
         st.info("ℹ️ Aucune offre trouvée. Essayez d'élargir vos critères.")
     else:
-        # Cartes de statistiques
+        total_pages = max((total + page_size - 1) // page_size, 1)
+        page = st.session_state["offers_page"]
+
+        st.subheader(f"📋 {total} offres trouvées (page {page}/{total_pages})")
+
         st.subheader("📈 Vue d'ensemble")
         col1, col2, col3, col4 = st.columns(4)
 
         with col1:
-            display_stat_card("Total d'offres", len(df_offers), "résultats")
+            display_stat_card("Total d'offres", total, "résultats")
 
         with col2:
             if "departement" in df_offers.columns:
                 deps_count = df_offers["departement"].nunique()
-                display_stat_card("Départements", deps_count, "couverts")
+                display_stat_card("Départements", deps_count, "sur cette page")
 
         with col3:
             if "entreprise_nom" in df_offers.columns:
                 entreprises = df_offers["entreprise_nom"].nunique()
-                display_stat_card("Entreprises", entreprises, "recruteurs")
+                display_stat_card("Entreprises", entreprises, "sur cette page")
 
         with col4:
             if "date_actualisation" in df_offers.columns:
@@ -556,12 +563,31 @@ with tab1:
 
         st.markdown("---")
 
-        # Liste des offres
-        st.subheader(f"📋 {len(df_offers)} offres trouvées")
-
         for _, offre in df_offers.iterrows():
             display_offer_card(offre)
             st.markdown("---")
+
+        col_prev, col_info, col_next = st.columns([1, 2, 1])
+
+        with col_prev:
+            if page > 1:
+                if st.button("⬅️ Page précédente"):
+                    st.session_state["offers_page"] = page - 1
+                    st.session_state["scroll_top"] = True
+                    st.rerun()
+
+        with col_info:
+            st.markdown(
+                f"<p style='text-align:center;'>Page {page} / {total_pages}</p>",
+                unsafe_allow_html=True,
+            )
+
+        with col_next:
+            if page < total_pages:
+                if st.button("Page suivante ➡️"):
+                    st.session_state["offers_page"] = page + 1
+                    st.session_state["scroll_top"] = True
+                    st.rerun()
 
 # ============================================================================
 # TAB 2: STATISTIQUES
@@ -576,19 +602,18 @@ with tab2:
         with col1:
             fig_map = create_department_map(df_offers)
             if fig_map:
-                st.plotly_chart(fig_map, width='content')
+                st.plotly_chart(fig_map, use_container_width=True)
             else:
                 st.info("Pas assez de données pour la carte")
 
         with col2:
             fig_contrat = create_contract_pie_chart(df_offers)
             if fig_contrat:
-                st.plotly_chart(fig_contrat, width='content')
+                st.plotly_chart(fig_contrat, use_container_width=True)
 
-        # Timeline
         fig_timeline = create_timeline_chart(df_offers)
         if fig_timeline:
-            st.plotly_chart(fig_timeline, width='content')
+            st.plotly_chart(fig_timeline, use_container_width=True)
 
 # ============================================================================
 # TAB 3: EXPORT
@@ -612,7 +637,6 @@ with tab3:
                 "experience_libelle",
                 "date_creation",
             ]
-            # Ne garder que les colonnes qui existent
             default_cols = [c for c in default_cols if c in available_cols]
 
             selected_cols = st.multiselect(
