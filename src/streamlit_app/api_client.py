@@ -21,7 +21,7 @@ class APIClient:
 
         self.session = self._create_session()
 
-        self._filters_cache: tuple[list[str], list[str]] | None = None
+        self._filters_cache: tuple[list[str], list[str], list[str]] | None = None
 
         logger.info(f"APIClient initialisé - URL: {self.base_url}")
 
@@ -121,7 +121,7 @@ class APIClient:
             logger.error(f"Request error: {e}")
             raise Exception(f"Erreur de connexion à l'API : {str(e)}") from e
 
-    def load_filters_values(self) -> tuple[list[str], list[str]]:
+    def load_filters_values(self) -> tuple[list[str], list[str], list[str]]:
         """
         Charge les listes de valeurs pour les filtres (type contrat, départements, expérience).
         Résultat mis en cache au niveau de l'instance.
@@ -163,7 +163,7 @@ class APIClient:
 
         except requests.RequestException as e:
             logger.error(f"Erreur lors du chargement des filtres: {e}")
-            self._filters_cache = ([], [])
+            self._filters_cache = ([], [], [])
             return self._filters_cache
 
     def get_statistics(self) -> dict[str, Any]:
