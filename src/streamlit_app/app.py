@@ -618,47 +618,43 @@ with tab3:
     if not df_offers.empty:
         st.subheader("💾 Export des données")
 
-        col1, col2 = st.columns(2)
+        export_format = st.selectbox("Format", ["CSV", "Excel", "JSON"])
 
-        with col1:
-            export_format = st.selectbox("Format", ["CSV", "Excel", "JSON"])
+        available_cols = df_offers.columns.tolist()
+        default_cols = [
+            "intitule",
+            "entreprise_nom",
+            "lieu_travail",
+            "type_contrat_libelle",
+            "experience_libelle",
+            "date_creation",
+        ]
+        default_cols = [c for c in default_cols if c in available_cols]
 
-            available_cols = df_offers.columns.tolist()
-            default_cols = [
-                "intitule",
-                "entreprise_nom",
-                "lieu_travail",
-                "type_contrat_libelle",
-                "experience_libelle",
-                "date_creation",
-            ]
-            default_cols = [c for c in default_cols if c in available_cols]
+        selected_cols = st.multiselect("Colonnes à exporter", available_cols, default=default_cols)
 
-            selected_cols = st.multiselect(
-                "Colonnes à exporter", available_cols, default=default_cols
-            )
+        st.markdown("---")
 
-        with col2:
-            if st.button("📥 Générer l'export", type="primary"):
-                export_df = df_offers[selected_cols] if selected_cols else df_offers
+        if st.button("📥 Générer l'export", type="primary", use_container_width=True):
+            export_df = df_offers[selected_cols] if selected_cols else df_offers
 
-                if export_format == "CSV":
-                    csv = export_df.to_csv(index=False, encoding="utf-8-sig")
-                    st.download_button(
-                        "⬇️ Télécharger CSV",
-                        data=csv,
-                        file_name="offres_france_travail.csv",
-                        mime="text/csv",
-                    )
+            if export_format == "CSV":
+                csv = export_df.to_csv(index=False, encoding="utf-8-sig")
+                st.download_button(
+                    "⬇️ Télécharger CSV",
+                    data=csv,
+                    file_name="offres_france_travail.csv",
+                    mime="text/csv",
+                )
 
-                elif export_format == "JSON":
-                    json_str = export_df.to_json(orient="records", force_ascii=False, indent=2)
-                    st.download_button(
-                        "⬇️ Télécharger JSON",
-                        data=json_str,
-                        file_name="offres_france_travail.json",
-                        mime="application/json",
-                    )
+            elif export_format == "JSON":
+                json_str = export_df.to_json(orient="records", force_ascii=False, indent=2)
+                st.download_button(
+                    "⬇️ Télécharger JSON",
+                    data=json_str,
+                    file_name="offres_france_travail.json",
+                    mime="application/json",
+                )
 
 # ============================================================================
 # FOOTER
