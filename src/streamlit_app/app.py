@@ -353,7 +353,7 @@ with col_title2:
     st.markdown(
         """
         <h1 style="text-align: center; color: #2c3e50; margin-bottom: 10px;">
-            💼 France Travail – Explorateur d'offres
+            France Travail – Explorateur d'offres
         </h1>
         <p style="text-align: center; color: #7f8c8d; font-size: 16px;">
             Recherchez et analysez les offres d'emploi en temps réel
