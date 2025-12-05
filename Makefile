@@ -70,7 +70,7 @@ produce-offers:
 	PYTHONPATH=src $(BIN)/python scripts/produce_offers.py --count 100
 
 docker-build:
-	cd docker && docker-compose up -d
+	cd docker && docker compose up -d --build
 
 kafka-create-topics: 
 	bash ./scripts/create_kafka_topics.sh
