@@ -130,7 +130,7 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
     ports:
-      - "9092:9092"   # accès depuis ta machine -> localhost:9092
+      - "9092:9092"   
       - "29092:29092" # optionnel pour debug
     networks:
       - ft-network

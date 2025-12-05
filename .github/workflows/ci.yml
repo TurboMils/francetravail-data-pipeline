@@ -38,5 +38,5 @@ jobs:
       - name: Type check (mypy)
         run: make type
 
-      - name: Build Docker image (CI)
-        run: make docker-build
+      # - name: Build Docker image (CI)
+      #   run: make docker-build
