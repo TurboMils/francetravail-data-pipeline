@@ -34,7 +34,7 @@ async def get_offer(
 async def search_offers(
     payload: OfferSearchRequest,
     repo: OfferRepository = Depends(get_offer_repository),
-):
+) -> OfferListResponse:
     items, total = repo.search_paginated(
         keyword=payload.keyword,
         departement=payload.departement,

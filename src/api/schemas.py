@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Offer(BaseModel):
@@ -37,16 +37,17 @@ class OfferListResponse(BaseModel):
     size: int
 
 
-class OfferSearchRequest(BaseModel):
-    """Schéma Pydantic pour la requête de recherche d'offres."""
-
+class OffersFilterRequest(BaseModel):
     keyword: list[str] | None = None
     departement: list[str] | None = None
     experience: list[str] | None = None
     type_contrat: list[str] | None = None
-    page: int = 1
-    size: int = 50
     date_from: str | None = None
+
+
+class OfferSearchRequest(OffersFilterRequest):
+    page: int = Field(1, ge=1)
+    size: int = Field(50, ge=1, le=1000)
 
 
 class ContractStats(BaseModel):
@@ -56,10 +57,9 @@ class ContractStats(BaseModel):
 
 class GlobalStats(BaseModel):
     total_offers: int
+    total_departments: int
     total_companies: int
-    first_date: date | None
-    last_date: date | None
-    by_type_contrat: list[ContractStats]
+    last_date: str
 
 
 class TimelinePoint(BaseModel):

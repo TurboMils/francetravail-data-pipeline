@@ -1,36 +1,70 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+from typing import Any, cast
+
+from fastapi import APIRouter, Depends
 
 from api.dependencies import get_offer_repository
-from api.schemas import (
-    DepartmentStat,
-    GlobalStats,
-    TimelinePoint,
-)
+from api.schemas import GlobalStats, OffersFilterRequest
 from db.repository import OfferRepository
 
 router = APIRouter()
 
 
-@router.get("/global", response_model=GlobalStats)
+@router.post("/global", response_model=GlobalStats)
 async def get_global_stats(
+    payload: OffersFilterRequest,
     repo: OfferRepository = Depends(get_offer_repository),
-):
-    return repo.get_global_stats()
+) -> GlobalStats:
+    return repo.get_global_stats(
+        keyword=payload.keyword,
+        departement=payload.departement,
+        type_contrat=payload.type_contrat,
+        experience=payload.experience,
+        date_from=payload.date_from,
+    )
 
 
-@router.get("/timeline", response_model=list[TimelinePoint])
-async def get_timeline_stats(
-    days: int = Query(30, ge=1, le=365),
+@router.post("/contrats")
+async def get_contrat_stats(
+    payload: OffersFilterRequest,
     repo: OfferRepository = Depends(get_offer_repository),
-):
-    return repo.get_timeline_stats(days=days)
+) -> list[dict[str, Any]]:
+    data = repo.get_contrat_stats(
+        keyword=payload.keyword,
+        departement=payload.departement,
+        experience=payload.experience,
+        type_contrat=payload.type_contrat,
+        date_from=payload.date_from,
+    )
+    return cast(list[dict[str, Any]], data)
 
 
-@router.get("/departements", response_model=list[DepartmentStat])
+@router.post("/departements")
 async def get_department_stats(
-    limit: int = Query(20, ge=1, le=200),
+    payload: OffersFilterRequest,
     repo: OfferRepository = Depends(get_offer_repository),
-):
-    return repo.get_department_stats(limit=limit)
+) -> list[dict[str, Any]]:
+    data = repo.get_department_stats(
+        keyword=payload.keyword,
+        departement=payload.departement,
+        experience=payload.experience,
+        type_contrat=payload.type_contrat,
+        date_from=payload.date_from,
+    )
+    return cast(list[dict[str, Any]], data)
+
+
+@router.post("/timeline")
+async def get_timeline_stats(
+    payload: OffersFilterRequest,
+    repo: OfferRepository = Depends(get_offer_repository),
+) -> list[dict[str, Any]]:
+    data = repo.get_timeline_stats(
+        keyword=payload.keyword,
+        departement=payload.departement,
+        experience=payload.experience,
+        type_contrat=payload.type_contrat,
+        date_from=payload.date_from,
+    )
+    return cast(list[dict[str, Any]], data)

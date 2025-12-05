@@ -1,5 +1,6 @@
 import re
 from datetime import datetime, timedelta
+from typing import Any
 
 import pandas as pd
 import plotly.express as px
@@ -7,6 +8,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from config.logging_config import get_logger
+from domain.departments import DEPARTMENT_COORDS
 from streamlit_app.api_client import APIClient
 
 EXPERIENCE_LABELS: dict[str, str] = {
@@ -96,55 +98,29 @@ def simple_markdown_format(text: str) -> str:
     return text
 
 
-def create_department_map(df_offers: pd.DataFrame) -> go.Figure | None:
-    if df_offers.empty or "departement" not in df_offers.columns:
+def create_department_map(df_deps: pd.DataFrame) -> go.Figure | None:
+
+    if df_deps.empty or "departement" not in df_deps.columns or "nb_offres" not in df_deps.columns:
         return None
 
     try:
-        dept_counts = (
-            df_offers.dropna(subset=["departement"])
-            .groupby("departement")
-            .size()
-            .reset_index(name="nb_offres")
-        )
+        map_data: list[dict[str, Any]] = []
 
-        if dept_counts.empty:
-            return None
-
-        department_coords = {
-            "75": [48.8566, 2.3522, "Paris"],
-            "13": [43.2965, 5.3698, "Bouches-du-Rhône"],
-            "69": [45.7640, 4.8357, "Rhône"],
-            "59": [50.6292, 3.0573, "Nord"],
-            "33": [44.8378, -0.5792, "Gironde"],
-            "31": [43.6047, 1.4442, "Haute-Garonne"],
-            "67": [48.5734, 7.7521, "Bas-Rhin"],
-            "92": [48.8637, 2.3615, "Hauts-de-Seine"],
-            "93": [48.9062, 2.4848, "Seine-Saint-Denis"],
-            "94": [48.7904, 2.4556, "Val-de-Marne"],
-            "78": [48.8120, 2.1225, "Yvelines"],
-            "91": [48.6322, 2.2417, "Essonne"],
-            "95": [49.0333, 2.0833, "Val-d'Oise"],
-            "44": [47.2184, -1.5536, "Loire-Atlantique"],
-            "35": [48.1173, -1.6778, "Ille-et-Vilaine"],
-            "57": [49.1193, 6.1757, "Moselle"],
-            "06": [43.7044, 7.2619, "Alpes-Maritimes"],
-        }
-
-        map_data: list[dict] = []
-        for _, row in dept_counts.iterrows():
+        for _, row in df_deps.iterrows():
             dept = str(row["departement"])
-            if dept in department_coords:
-                lat, lon, name = department_coords[dept]
-                map_data.append(
-                    {
-                        "departement": dept,
-                        "nom": name,
-                        "nb_offres": row["nb_offres"],
-                        "lat": lat,
-                        "lon": lon,
-                    }
-                )
+            coord = DEPARTMENT_COORDS.get(dept)
+            if not coord:
+                continue
+
+            map_data.append(
+                {
+                    "departement": dept,
+                    "nom": coord["name"],
+                    "nb_offres": int(row["nb_offres"]),
+                    "lat": coord["lat"],
+                    "lon": coord["lon"],
+                }
+            )
 
         if not map_data:
             return None
@@ -175,25 +151,21 @@ def create_department_map(df_offers: pd.DataFrame) -> go.Figure | None:
         return None
 
 
-def create_contract_pie_chart(df_offers: pd.DataFrame) -> go.Figure | None:
-    if df_offers.empty or "type_contrat_libelle" not in df_offers.columns:
+def create_contract_pie_chart(df_contrats: pd.DataFrame) -> go.Figure | None:
+    if (
+        df_contrats.empty
+        or "type_contrat" not in df_contrats.columns
+        or "nb_offres" not in df_contrats.columns
+    ):
         return None
 
     try:
-        by_contrat = (
-            df_offers.dropna(subset=["type_contrat_libelle"])
-            .groupby("type_contrat_libelle")
-            .size()
-            .reset_index(name="nb_offres")
-        )
-
-        if by_contrat.empty:
-            return None
+        df = df_contrats.copy()
 
         fig = px.pie(
-            by_contrat,
+            df,
             values="nb_offres",
-            names="type_contrat_libelle",
+            names="type_contrat",
             title="Répartition par type de contrat",
             hole=0.4,
         )
@@ -206,24 +178,29 @@ def create_contract_pie_chart(df_offers: pd.DataFrame) -> go.Figure | None:
         return None
 
 
-def create_timeline_chart(df_offers: pd.DataFrame) -> go.Figure | None:
-    if df_offers.empty or "date_creation" not in df_offers.columns:
+def create_timeline_chart(df_timeline: pd.DataFrame) -> go.Figure | None:
+    """
+    df_timeline doit contenir:
+      - 'date' (str ou date)
+      - 'nb_offres' (int)
+    """
+    if (
+        df_timeline.empty
+        or "date" not in df_timeline.columns
+        or "nb_offres" not in df_timeline.columns
+    ):
         return None
 
     try:
-        df_timeline = df_offers.copy()
-        df_timeline["date_creation"] = pd.to_datetime(df_timeline["date_creation"], errors="coerce")
+        df = df_timeline.copy()
+        df["date"] = pd.to_datetime(df["date"], errors="coerce")
 
-        timeline = df_timeline.dropna(subset=["date_creation"]).copy()
-        timeline["date"] = timeline["date_creation"].dt.date
-
-        if timeline.empty:
+        df = df.dropna(subset=["date"])
+        if df.empty:
             return None
 
-        timeline_counts = timeline.groupby("date").size().reset_index(name="nb_offres")
-
         fig = px.line(
-            timeline_counts,
+            df,
             x="date",
             y="nb_offres",
             title="Évolution des publications",
@@ -532,7 +509,15 @@ tab1, tab2, tab3 = st.tabs(["📋 Résultats", "📊 Statistiques", "🔍 Export
 # ============================================================================
 
 with tab1:
-    if df_offers.empty:
+    total_offers, total_departments, total_companies, last_date = api.get_statistics(
+        keyword=filters["keyword"],
+        departement=filters["departement"],
+        type_contrat=filters["type_contrat"],
+        experience=filters["experience"],
+        date_from=filters["date_from"],
+    )
+
+    if total_offers == 0:
         st.info("ℹ️ Aucune offre trouvée. Essayez d'élargir vos critères.")
     else:
         total_pages = max((total + page_size - 1) // page_size, 1)
@@ -542,24 +527,22 @@ with tab1:
         col1, col2, col3, col4 = st.columns(4)
 
         with col1:
-            display_stat_card("Total d'offres", total, "résultats")
+            display_stat_card("Total d'offres", total_offers, "résultats")
 
         with col2:
-            if "departement" in df_offers.columns:
-                deps_count = df_offers["departement"].nunique()
-                display_stat_card("Départements", deps_count, "sur cette page")
+            display_stat_card("Départements", total_departments, "couverts")
 
         with col3:
-            if "entreprise_nom" in df_offers.columns:
-                entreprises = df_offers["entreprise_nom"].nunique()
-                display_stat_card("Entreprises", entreprises, "sur cette page")
+            display_stat_card("Entreprises", total_companies, "recruteurs")
 
         with col4:
-            if "date_actualisation" in df_offers.columns:
-                latest = pd.to_datetime(df_offers["date_actualisation"], errors="coerce").max()
+            if last_date:
+                latest = pd.to_datetime(last_date, errors="coerce")
                 if pd.notna(latest):
                     display_stat_card(
-                        "Dernière MAJ", latest.strftime("%d/%m"), latest.strftime("%Y")
+                        "Dernière MAJ",
+                        latest.strftime("%d/%m"),
+                        latest.strftime("%Y"),
                     )
 
         st.markdown("---")
@@ -595,26 +578,37 @@ with tab1:
 # ============================================================================
 
 with tab2:
-    if not df_offers.empty:
+    filters = st.session_state["filters"]
+    df_deps = api.get_department_stats(**filters)
+    logger.info(f"Department stats dataframe : {df_deps}")
+    df_timeline = api.get_timeline_data(**filters)
+    df_contrats = api.get_contrat_stats(**filters)
+
+    logger.info(f"df_contrats stats dataframe shape: {df_contrats}")
+
+    if not df_deps.empty and not df_offers.empty:
         st.subheader("📊 Analyse statistique")
 
         col1, col2 = st.columns(2)
 
         with col1:
-            fig_map = create_department_map(df_offers)
+            fig_map = create_department_map(df_deps)
             if fig_map:
                 st.plotly_chart(fig_map, use_container_width=True)
             else:
                 st.info("Pas assez de données pour la carte")
 
         with col2:
-            fig_contrat = create_contract_pie_chart(df_offers)
+            fig_contrat = create_contract_pie_chart(df_contrats)
             if fig_contrat:
                 st.plotly_chart(fig_contrat, use_container_width=True)
 
-        fig_timeline = create_timeline_chart(df_offers)
-        if fig_timeline:
-            st.plotly_chart(fig_timeline, use_container_width=True)
+        if not df_timeline.empty:
+            st.markdown("---")
+            st.subheader("📅 Évolution des publications dans le temps")
+            fig_timeline = create_timeline_chart(df_timeline)
+            if fig_timeline:
+                st.plotly_chart(fig_timeline, use_container_width=True)
 
 # ============================================================================
 # TAB 3: EXPORT

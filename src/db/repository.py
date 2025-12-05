@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from datetime import date, timedelta
+from datetime import date, datetime
 from typing import Any
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
+from sqlalchemy.sql import Select
 
 from db.models import Offre
 
@@ -128,114 +129,173 @@ class OfferRepository:
         if size < 1:
             size = 10
 
-        stmt = select(Offre)
+        base_stmt = self._build_filtered_query(
+            keyword=keyword,
+            departement=departement,
+            experience=experience,
+            type_contrat=type_contrat,
+            date_from=date_from,
+        )
 
-        # Filtre mots-clés (OR sur tous les mots)
-        if keyword:
-            like_clauses: list[Any] = []
-            for kw in keyword:
-                kw = kw.strip()
-                if not kw:
-                    continue
-                pattern = f"%{kw}%"
-                like_clauses.append(Offre.intitule.ilike(pattern))
-                like_clauses.append(Offre.description.ilike(pattern))
-            if like_clauses:
-                stmt = stmt.where(or_(*like_clauses))
-
-        if experience:
-            stmt = stmt.where(Offre.experience.in_(experience))
-
-        if type_contrat:
-            stmt = stmt.where(Offre.type_contrat.in_(type_contrat))
-
-        if departement:
-            stmt = stmt.where(Offre.departement.in_(departement))
-        if date_from:
-            stmt = stmt.where(Offre.date_creation >= date_from)
-
-        # total avant pagination
         total = self.session.execute(
-            stmt.with_only_columns(func.count(Offre.id)).order_by(None)
+            base_stmt.with_only_columns(func.count(Offre.id)).order_by(None)
         ).scalar_one()
 
         offset = (page - 1) * size
-        stmt = stmt.order_by(Offre.date_creation.desc().nullslast()).offset(offset).limit(size)
-
+        stmt = base_stmt.order_by(Offre.date_creation.desc().nullslast()).offset(offset).limit(size)
         items = list(self.session.execute(stmt).scalars().all())
         return items, total
 
-    def get_global_stats(self) -> dict[str, Any]:
-        total_offers = self.session.execute(select(func.count(Offre.id))).scalar_one()
+    def get_global_stats(
+        self,
+        *,
+        keyword: list[str] | None,
+        departement: list[str] | None,
+        experience: list[str] | None,
+        type_contrat: list[str] | None,
+        date_from: str | None = None,
+    ) -> dict[str, Any]:
+        base_stmt = self._build_filtered_query(
+            keyword=keyword,
+            departement=departement,
+            experience=experience,
+            type_contrat=type_contrat,
+            date_from=date_from,
+        )
+
+        subq = base_stmt.subquery()
+
+        total_offers = self.session.execute(select(func.count(subq.c.id))).scalar_one()
 
         total_companies = self.session.execute(
-            select(func.count(func.distinct(Offre.entreprise_nom)))
+            select(func.count(func.distinct(subq.c.entreprise_nom)))
         ).scalar_one()
 
-        first_date, last_date = self.session.execute(
-            select(func.min(Offre.date_creation), func.max(Offre.date_creation))
-        ).one()
+        total_departments = self.session.execute(
+            select(func.count(func.distinct(subq.c.departement)))
+        ).scalar_one()
 
-        by_type_rows = self.session.execute(
-            select(Offre.type_contrat, func.count(Offre.id).label("count"))
-            .group_by(Offre.type_contrat)
-            .order_by(func.count(Offre.id).desc())
-        ).all()
+        last_date_raw = self.session.execute(select(func.max(subq.c.date_creation))).scalar_one()
 
-        by_type_contrat = [
-            {"type_contrat": type_contrat, "count": count} for type_contrat, count in by_type_rows
-        ]
+        if isinstance(last_date_raw, (datetime, date)):
+            last_date: str | None = last_date_raw.isoformat()
+        elif last_date_raw is None:
+            last_date = None
+        else:
+            last_date = str(last_date_raw)
 
         return {
             "total_offers": total_offers,
+            "total_departments": total_departments,
             "total_companies": total_companies,
-            "first_date": first_date,
             "last_date": last_date,
-            "by_type_contrat": by_type_contrat,
         }
 
-    def get_timeline_stats(self, days: int = 30) -> list[dict[str, Any]]:
-        """
-        Timeline du nombre d'offres par jour sur les N derniers jours.
-        Retourne une liste de {date, count}.
-        """
-        if days <= 0:
-            days = 30
-
-        start_date = date.today() - timedelta(days=days - 1)
-
-        rows = self.session.execute(
-            select(
-                func.date(Offre.date_creation).label("date"),
-                func.count(Offre.id).label("count"),
-            )
-            .where(Offre.date_creation >= start_date)
-            .group_by(func.date(Offre.date_creation))
-            .order_by(func.date(Offre.date_creation))
-        ).all()
-
-        return [{"date": row.date, "count": row.count} for row in rows]
-
-    def get_department_stats(self, limit: int = 20) -> list[dict[str, Any]]:
-        """
-        Top départements par nombre d'offres.
-        Retourne une liste de {departement, count}.
-        """
-        if limit <= 0:
-            limit = 20
+    def get_department_stats(
+        self,
+        *,
+        keyword: list[str] | None,
+        departement: list[str] | None,
+        experience: list[str] | None,
+        type_contrat: list[str] | None,
+        date_from: str | None = None,
+    ) -> list[dict[str, Any]]:
+        base_stmt = self._build_filtered_query(
+            keyword=keyword,
+            departement=departement,
+            experience=experience,
+            type_contrat=type_contrat,
+            date_from=date_from,
+        )
+        subq = base_stmt.subquery()
 
         rows = self.session.execute(
             select(
-                Offre.departement,
-                func.count(Offre.id).label("count"),
+                subq.c.departement,
+                func.count().label("nb_offres"),
             )
-            .where(Offre.departement.isnot(None))
-            .group_by(Offre.departement)
-            .order_by(func.count(Offre.id).desc())
-            .limit(limit)
+            .where(subq.c.departement.isnot(None))
+            .group_by(subq.c.departement)
+            .order_by(subq.c.departement)
         ).all()
 
-        return [{"departement": dep, "count": count} for dep, count in rows]
+        return [{"departement": row.departement, "nb_offres": row.nb_offres} for row in rows]
+
+    def get_contrat_stats(
+        self,
+        *,
+        keyword: list[str] | None,
+        departement: list[str] | None,
+        experience: list[str] | None,
+        type_contrat: list[str] | None,
+        date_from: str | None = None,
+    ) -> list[dict[str, Any]]:
+        base_stmt = self._build_filtered_query(
+            keyword=keyword,
+            departement=departement,
+            experience=experience,
+            type_contrat=type_contrat,
+            date_from=date_from,
+        )
+        subq = base_stmt.subquery()
+
+        rows = self.session.execute(
+            select(
+                subq.c.type_contrat,
+                func.count().label("nb_offres"),
+            )
+            .where(subq.c.type_contrat.isnot(None))
+            .group_by(subq.c.type_contrat)
+            .order_by(subq.c.type_contrat)
+        ).all()
+
+        return [{"type_contrat": row.type_contrat, "nb_offres": row.nb_offres} for row in rows]
+
+    def get_timeline_stats(
+        self,
+        *,
+        keyword: list[str] | None,
+        departement: list[str] | None,
+        experience: list[str] | None,
+        type_contrat: list[str] | None,
+        date_from: str | None = None,
+    ) -> list[dict[str, Any]]:
+        base_stmt = self._build_filtered_query(
+            keyword=keyword,
+            departement=departement,
+            experience=experience,
+            type_contrat=type_contrat,
+            date_from=date_from,
+        )
+        subq = base_stmt.subquery()
+
+        rows = self.session.execute(
+            select(
+                func.date(subq.c.date_creation).label("date"),
+                func.count().label("nb_offres"),
+            )
+            .group_by("date")
+            .order_by("date")
+        ).all()
+
+        result: list[dict[str, Any]] = []
+        for row in rows:
+            d = row.date
+            if isinstance(d, (datetime, date)):
+                date_str = d.isoformat()
+            elif d is None:
+                date_str = None
+            else:
+                date_str = str(d)
+
+            result.append(
+                {
+                    "date": date_str,
+                    "nb_offres": int(row.nb_offres),
+                }
+            )
+
+        return result
 
     def get_filter_values(self) -> dict[str, list[str]]:
         """Retourne les valeurs disponibles pour les filtres."""
@@ -283,3 +343,40 @@ class OfferRepository:
             "experience": experience_list,
             "departements": deps_list,
         }
+
+    def _build_filtered_query(
+        self,
+        *,
+        keyword: list[str] | None,
+        departement: list[str] | None,
+        experience: list[str] | None,
+        type_contrat: list[str] | None,
+        date_from: str | None = None,
+    ) -> Select[tuple[Offre]]:
+        stmt: Select[tuple[Offre]] = select(Offre)
+
+        if keyword:
+            like_clauses: list[Any] = []
+            for kw in keyword:
+                kw = kw.strip()
+                if not kw:
+                    continue
+                pattern = f"%{kw}%"
+                like_clauses.append(Offre.intitule.ilike(pattern))
+                like_clauses.append(Offre.description.ilike(pattern))
+            if like_clauses:
+                stmt = stmt.where(or_(*like_clauses))
+
+        if experience:
+            stmt = stmt.where(Offre.experience.in_(experience))
+
+        if type_contrat:
+            stmt = stmt.where(Offre.type_contrat.in_(type_contrat))
+
+        if departement:
+            stmt = stmt.where(Offre.departement.in_(departement))
+
+        if date_from:
+            stmt = stmt.where(Offre.date_creation >= date_from)
+
+        return stmt

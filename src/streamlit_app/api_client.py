@@ -54,7 +54,7 @@ class APIClient:
 
     def fetch_offers(
         self,
-        keyword: str | None = None,
+        keyword: list[str] | None = None,
         departement: list[str] | None = None,
         type_contrat: list[str] | None = None,
         experience: list[str] | None = None,
@@ -73,6 +73,8 @@ class APIClient:
         }
 
         payload = {k: v for k, v in payload.items() if v is not None}
+
+        logger.info(f"Payload :  {payload}")
 
         try:
             logger.info(f"Fetching offers with filters: {payload}")
@@ -113,7 +115,9 @@ class APIClient:
             status_code = e.response.status_code if e.response is not None else "unknown"
             if e.response is not None and e.response.status_code == 422:
                 logger.error("Validation error in request")
-                raise Exception("Erreur de validation. Vérifiez vos filtres.") from e
+                raise Exception(
+                    f"Erreur de validation. Vérifiez vos filtres. Payload : {payload}"
+                ) from e
             elif e.response is not None and e.response.status_code == 404:
                 logger.error("Endpoint not found")
                 raise Exception("L'API n'est pas accessible. Vérifiez la configuration.") from e
@@ -166,59 +170,139 @@ class APIClient:
             logger.error(f"Erreur lors du chargement des filtres: {e}")
             return [], [], []
 
-    def get_statistics(self) -> dict[str, Any]:
+    def get_statistics(
+        self,
+        keyword: list[str] | None = None,
+        departement: list[str] | None = None,
+        type_contrat: list[str] | None = None,
+        experience: list[str] | None = None,
+        date_from: str | None = None,
+    ) -> tuple[int, int, int, str | None]:
+        payload: dict[str, Any] = {
+            "keyword": keyword,
+            "departement": departement,
+            "experience": experience,
+            "type_contrat": type_contrat,
+            "date_from": date_from,
+        }
+        payload = {k: v for k, v in payload.items() if v is not None}
+
         try:
-            response = self.session.get(
+            response = self.session.post(
                 f"{self.base_url}/stats/global",
+                json=payload,
                 timeout=self.timeout,
             )
             response.raise_for_status()
 
             data: Any = response.json()
-
             if not isinstance(data, dict):
                 raise ValueError("Réponse /stats/global invalide (dict attendu).")
 
-            return cast(dict[str, Any], data)
+            total_offers = data.get("total_offers", 0)
+            total_departments = data.get("total_departments", 0)
+            total_companies = data.get("total_companies", 0)
+            last_date = data.get("last_date")
 
+            return int(total_offers), int(total_departments), int(total_companies), last_date
         except requests.RequestException as e:
-            logger.error(f"Failed to get statistics: {e}")
-            return {}
+            logger.error(f"Failed to get global statistics: {e}")
+            return 0, 0, 0, None
 
-    def get_timeline_data(self, days: int = 30) -> pd.DataFrame:
+    def get_department_stats(
+        self,
+        keyword: list[str] | None = None,
+        departement: list[str] | None = None,
+        type_contrat: list[str] | None = None,
+        experience: list[str] | None = None,
+        date_from: str | None = None,
+    ) -> pd.DataFrame:
+        payload: dict[str, Any] = {
+            "keyword": keyword,
+            "departement": departement,
+            "experience": experience,
+            "type_contrat": type_contrat,
+            "date_from": date_from,
+        }
+        payload = {k: v for k, v in payload.items() if v is not None}
 
         try:
-            response = self.session.get(
-                f"{self.base_url}/stats/timeline", params={"days": days}, timeout=self.timeout
+            response = self.session.post(
+                f"{self.base_url}/stats/departements",
+                json=payload,
+                timeout=self.timeout,
             )
             response.raise_for_status()
-            data = response.json()
-
+            data: Any = response.json()
             if not data:
                 return pd.DataFrame()
-
             return pd.DataFrame(data)
-
-        except requests.RequestException as e:
-            logger.error(f"Failed to get timeline: {e}")
-            return pd.DataFrame()
-
-    def get_department_stats(self, limit: int = 20) -> pd.DataFrame:
-
-        try:
-            response = self.session.get(
-                f"{self.base_url}/stats/departements", params={"limit": limit}, timeout=self.timeout
-            )
-            response.raise_for_status()
-            data = response.json()
-
-            if not data:
-                return pd.DataFrame()
-
-            return pd.DataFrame(data)
-
         except requests.RequestException as e:
             logger.error(f"Failed to get department stats: {e}")
+            return pd.DataFrame()
+
+    def get_contrat_stats(
+        self,
+        keyword: list[str] | None = None,
+        departement: list[str] | None = None,
+        type_contrat: list[str] | None = None,
+        experience: list[str] | None = None,
+        date_from: str | None = None,
+    ) -> pd.DataFrame:
+        payload: dict[str, Any] = {
+            "keyword": keyword,
+            "departement": departement,
+            "experience": experience,
+            "type_contrat": type_contrat,
+            "date_from": date_from,
+        }
+        payload = {k: v for k, v in payload.items() if v is not None}
+
+        try:
+            response = self.session.post(
+                f"{self.base_url}/stats/contrats",
+                json=payload,
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
+            data: Any = response.json()
+            if not data:
+                return pd.DataFrame()
+            return pd.DataFrame(data)
+        except requests.RequestException as e:
+            logger.error(f"Failed to get contrat stats: {e}")
+            return pd.DataFrame()
+
+    def get_timeline_data(
+        self,
+        keyword: list[str] | None = None,
+        departement: list[str] | None = None,
+        type_contrat: list[str] | None = None,
+        experience: list[str] | None = None,
+        date_from: str | None = None,
+    ) -> pd.DataFrame:
+        payload: dict[str, Any] = {
+            "keyword": keyword,
+            "departement": departement,
+            "experience": experience,
+            "type_contrat": type_contrat,
+            "date_from": date_from,
+        }
+        payload = {k: v for k, v in payload.items() if v is not None}
+
+        try:
+            response = self.session.post(
+                f"{self.base_url}/stats/timeline",
+                json=payload,
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
+            data: Any = response.json()
+            if not data:
+                return pd.DataFrame()
+            return pd.DataFrame(data)
+        except requests.RequestException as e:
+            logger.error(f"Failed to get timeline stats: {e}")
             return pd.DataFrame()
 
     def close(self):
