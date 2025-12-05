@@ -241,7 +241,7 @@ def display_offer_card(offre: pd.Series) -> None:
             st.markdown(f"📍 **Lieu :** {offre['lieu_travail']}")
 
         if offre.get("description"):
-            desc = simple_markdown_format(str(offre["description"]))
+            desc = offre["description"]
             preview = desc[:300] + "..." if len(desc) > 300 else desc
 
             with st.expander(f"📖 **Description :** {preview}"):

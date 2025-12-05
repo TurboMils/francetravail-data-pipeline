@@ -12,12 +12,16 @@ def strip_html(text: str | None) -> str | None:
     """Supprime les balises HTML simples et dés-échappe les entités."""
     if text is None:
         return None
+
     # Dés-échappe les entités HTML
     text = html.unescape(text)
+
     # Supprime les balises
     text = HTML_TAG_RE.sub(" ", text)
+
     # Normalise les espaces
     text = re.sub(r"\s+", " ", text).strip()
+
     return text or None
 
 
@@ -30,11 +34,13 @@ def normalize_date(date_str: str | None) -> str | None:
         return None
 
     s = date_str.strip()
+    if not s:
+        return None
+
     # Gestion du 'Z' terminal (UTC)
     if s.endswith("Z"):
         s = s[:-1] + "+00:00"
 
-    # Essaie plusieurs parseurs simples si besoin
     for fmt in (None, "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
         try:
             if fmt is None:
@@ -45,7 +51,7 @@ def normalize_date(date_str: str | None) -> str | None:
         except Exception:
             continue
 
-    # En cas d'échec, on loguera côté usage si besoin, mais on renvoie la valeur brute
+    # En cas d'échec, on renvoie la valeur brute
     return date_str
 
 
@@ -57,6 +63,7 @@ def extract_departement_from_code_postal(code_postal: str | None) -> str | None:
     """
     if not code_postal:
         return None
+
     cp = code_postal.strip()
     if len(cp) < 2:
         return None
@@ -68,19 +75,50 @@ def extract_departement_from_code_postal(code_postal: str | None) -> str | None:
     return cp[:2]
 
 
+def simple_markdown_format(text: str | None) -> str | None:
+    """
+    Mise en forme très légère pour un rendu Markdown.
+    N’essaie pas de “rendre joli”, juste structure un peu.
+    """
+    if not text:
+        return None
+
+    # Puces : "* " -> "• "
+    text = re.sub(r"^\*\s+", "• ", text, flags=re.MULTILINE)
+
+    # Sauts de ligne après phrase terminée suivie d'une majuscule
+    text = re.sub(r"\.\s+(?=[A-ZÀÂÄÇÉÈÊËÎÏÔÖÙÛÜ])", ".\n\n", text)
+
+    sections = [
+        "Missions principales",
+        "De formation technique",
+        "Les avantages",
+        "Vous maîtrisez",
+        "Rigoureux",
+        "Profil recherché",
+        "Vos missions",
+        "Compétences requises",
+    ]
+    for section in sections:
+        text = text.replace(section, f"**{section}**")
+
+    return text
+
+
 def clean_offer(raw: dict[str, Any]) -> dict[str, Any]:
     """
     Applique les transformations de nettoyage / normalisation sur une offre brute.
-    On travaille sur une copie, on retourne un nouveau Dict.
-    - description : strip HTML
+    - description : strip HTML + léger format Markdown
     - dates : normalisées ISO
     - lieuTravail.departement : complété à partir du codePostal si absent
     """
     offer = dict(raw)
 
     # Description
-    description = offer.get("description")
-    offer["description"] = strip_html(description)
+    description_raw = offer.get("description")
+    cleaned_desc = strip_html(description_raw)
+    formatted_desc = simple_markdown_format(cleaned_desc)
+    offer["description"] = formatted_desc
 
     # Dates
     if "dateCreation" in offer:
