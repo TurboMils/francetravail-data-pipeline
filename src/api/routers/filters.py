@@ -8,6 +8,7 @@ from db.repository import OfferRepository
 
 router = APIRouter()
 
+
 @router.get("", response_model=FiltersResponse)
 async def get_filters(
     repo: OfferRepository = Depends(get_offer_repository),

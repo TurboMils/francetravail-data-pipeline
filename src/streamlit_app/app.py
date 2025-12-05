@@ -46,13 +46,13 @@ if "offers_page" not in st.session_state:
 
 if "filters" not in st.session_state:
     st.session_state["filters"] = {
-        "keyword": None,        # list[str] | None
-        "departement": None,    # list[str] | None
-        "type_contrat": None,   # list[str] | None
-        "experience": None,     # list[str] | None
-        "date_from": None,      # str | None (YYYY-MM-DD)
+        "keyword": None,  # list[str] | None
+        "departement": None,  # list[str] | None
+        "type_contrat": None,  # list[str] | None
+        "experience": None,  # list[str] | None
+        "date_from": None,  # str | None (YYYY-MM-DD)
     }
-    
+
 if "scroll_top" not in st.session_state:
     st.session_state["scroll_top"] = False
 
@@ -60,6 +60,7 @@ if "scroll_top" not in st.session_state:
 # ============================================================================
 # FONCTIONS UTILITAIRES
 # ============================================================================
+
 
 def remove_tous_from_filter(items: list[str] | None) -> list[str] | None:
     if not items:
@@ -513,7 +514,9 @@ try:
             limit=page_size,
             date_from=filters["date_from"],
         )
-        logger.info(f"Fetched {len(df_offers)} offers (page={page}, size={page_size}, total={total})")
+        logger.info(
+            f"Fetched {len(df_offers)} offers (page={page}, size={page_size}, total={total})"
+        )
 except Exception as e:
     st.error(f"❌ {str(e)}")
     st.stop()
@@ -534,8 +537,6 @@ with tab1:
     else:
         total_pages = max((total + page_size - 1) // page_size, 1)
         page = st.session_state["offers_page"]
-
-        st.subheader(f"📋 {total} offres trouvées (page {page}/{total_pages})")
 
         st.subheader("📈 Vue d'ensemble")
         col1, col2, col3, col4 = st.columns(4)

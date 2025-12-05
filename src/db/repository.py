@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from db.models import Offre
 
+
 class OfferRepository:
     """Repository basique pour la table offres."""
 
@@ -128,10 +129,10 @@ class OfferRepository:
             size = 10
 
         stmt = select(Offre)
-        
+
         # Filtre mots-clés (OR sur tous les mots)
         if keyword:
-            like_clauses = list[Any] = []
+            like_clauses: list[Any] = []
             for kw in keyword:
                 kw = kw.strip()
                 if not kw:

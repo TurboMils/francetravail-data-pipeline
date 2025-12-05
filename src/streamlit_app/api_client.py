@@ -87,7 +87,7 @@ class APIClient:
             data: Any = response.json()
             if not isinstance(data, dict):
                 raise ValueError("Réponse /offers/search invalide (dict attendu).")
-        
+
             items = data.get("items", [])
             total = data.get("total", 0)
 
@@ -96,7 +96,9 @@ class APIClient:
                 return pd.DataFrame(), 0
 
             df = pd.DataFrame(items)
-            logger.info(f"Fetched {len(df)} offers successfully (page={page}, size={limit}, total={total})")
+            logger.info(
+                f"Fetched {len(df)} offers successfully (page={page}, size={limit}, total={total})"
+            )
 
             return df, total
 
