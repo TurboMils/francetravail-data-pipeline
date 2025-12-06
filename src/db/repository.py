@@ -41,6 +41,8 @@ class OfferRepository:
             "type_contrat": raw.get("typeContrat"),
             "type_contrat_libelle": raw.get("typeContratLibelle"),
             "entreprise_nom": raw.get("entreprise", {}).get("nom"),
+            "entreprise_url": raw.get("entreprise", {}).get("url"),
+            "contact_url": raw.get("contact", {}).get("urlRecruteur"),
             "experience_libelle": raw.get("experienceLibelle"),
             "experience_commentaire": raw.get("experienceCommentaire"),
             "experience": raw.get("experienceExige"),

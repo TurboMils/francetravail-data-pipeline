@@ -36,6 +36,8 @@ class Offre(Base):
     lieu_travail: Mapped[str | None] = mapped_column(String(255))
 
     entreprise_nom: Mapped[str | None] = mapped_column(String(200))
+    entreprise_url: Mapped[str | None] = mapped_column(String(255))
+    contact_url: Mapped[str | None] = mapped_column(String(255))
 
     # 7. Code ROME
     rome_code: Mapped[str | None] = mapped_column(String(10))

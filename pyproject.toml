@@ -2,21 +2,25 @@
 name = "francetravail-data-pipeline"
 version = "0.1.0"
 description = "Pipeline data complet pour l'API France Travail"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.13"
 
 dependencies = [
-  "httpx",
-  "confluent-kafka",
-  "sqlalchemy>=2.0",
-  "psycopg2-binary",
-  "pydantic-settings",
-  "fastapi",
-  "uvicorn[standard]",
-  "streamlit",
-  "plotly",
-  "python-dotenv",
-  "watchdog",
-  "apache-airflow",
+  # HTTP / Kafka / DB / config
+  "httpx>=0.27,<0.28",
+  "confluent-kafka>=2.4,<3.0",
+  "sqlalchemy>=2.0,<2.1",
+  "psycopg2-binary>=2.9,<3.0",
+  "pydantic-settings>=2.3,<3.0",
+  "python-dotenv>=1.0,<2.0",
+  "watchdog>=4.0,<5.0",
+
+  # API
+  "fastapi>=0.110,<0.115",
+  "uvicorn[standard]>=0.29,<0.32",
+
+  # UI Streamlit
+  "streamlit>=1.33,<1.40",
+  "plotly>=5.20,<6.0",
 ]
 
 [project.optional-dependencies]
@@ -31,6 +35,12 @@ dev = [
   "cryptography",
   "types-requests",
   "pandas-stubs",
+]
+
+gcp = [
+  "google-cloud-secret-manager>=2.20,<3.0",
+  "google-cloud-logging>=3.10,<4.0",
+  "google-cloud-storage>=2.16,<3.0",
 ]
 
 [tool.black]

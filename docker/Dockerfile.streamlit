@@ -8,7 +8,6 @@ RUN apt-get update && apt-get install -y build-essential libpq-dev && rm -rf /va
 COPY pyproject.toml ./
 
 RUN pip install --upgrade pip && \
-    pip install streamlit plotly && \
     pip install .
 
 COPY src ./src

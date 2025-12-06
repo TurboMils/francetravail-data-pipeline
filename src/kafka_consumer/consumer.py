@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-import os
 import signal
 from typing import Any
 
@@ -21,9 +20,8 @@ logger = get_logger(__name__)
 class OfferKafkaConsumer:
     def __init__(self) -> None:
 
-        bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS", settings.kafka_bootstrap_servers)
         consumer_conf = {
-            "bootstrap.servers": bootstrap_servers,
+            "bootstrap.servers": settings.kafka_bootstrap_servers,
             "group.id": settings.kafka_consumer_group,
             "auto.offset.reset": settings.kafka_auto_offset_reset,
             "enable.auto.commit": settings.kafka_enable_auto_commit,

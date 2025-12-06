@@ -75,29 +75,6 @@ def remove_tous_from_filter(items: list[str] | None) -> list[str] | None:
     return cleaned if cleaned else None
 
 
-def simple_markdown_format(text: str) -> str:
-    if not text:
-        return ""
-
-    text = re.sub(r"^\*\s+", "• ", text, flags=re.MULTILINE)
-    text = re.sub(r"\.\s+(?=[A-Z])", ".\n\n", text)
-
-    sections = [
-        "Missions principales",
-        "De formation technique",
-        "Les avantages",
-        "Vous maîtrisez",
-        "Rigoureux",
-        "Profil recherché",
-        "Vos missions",
-        "Compétences requises",
-    ]
-    for section in sections:
-        text = text.replace(section, f"**{section}**")
-
-    return text
-
-
 def create_department_map(df_deps: pd.DataFrame) -> go.Figure | None:
 
     if df_deps.empty or "departement" not in df_deps.columns or "nb_offres" not in df_deps.columns:
@@ -179,11 +156,6 @@ def create_contract_pie_chart(df_contrats: pd.DataFrame) -> go.Figure | None:
 
 
 def create_timeline_chart(df_timeline: pd.DataFrame) -> go.Figure | None:
-    """
-    df_timeline doit contenir:
-      - 'date' (str ou date)
-      - 'nb_offres' (int)
-    """
     if (
         df_timeline.empty
         or "date" not in df_timeline.columns
@@ -268,6 +240,14 @@ def display_offer_card(offre: pd.Series) -> None:
 
         if offre.get("salaire_libelle"):
             st.info(f"💰 {offre['salaire_libelle']}")
+
+        if offre.get("contact_url") or offre.get("entreprise_url"):
+            url = (
+                offre.get("contact_url")
+                if offre.get("contact_url")
+                else offre.get("entreprise_url")
+            )
+            st.markdown(f"[🔗 Postuler ]({url})", unsafe_allow_html=True)
 
         if offre.get("date_creation"):
             try:
@@ -435,7 +415,7 @@ with st.sidebar:
     with col_btn1:
         recherche_btn = st.button("🔎 Rechercher", type="primary", use_container_width=True)
     with col_btn2:
-        reset_btn = st.button("🔄 Reset", width="content", use_container_width=True)
+        reset_btn = st.button("🔄 Reset", use_container_width=True)
 
 # Conversion des filtres pour sauvegarde
 

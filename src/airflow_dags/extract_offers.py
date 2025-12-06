@@ -31,10 +31,7 @@ def task_check_api_health(**context) -> None:
 
 
 def task_extract_and_publish(**context) -> dict:
-    """
-    Extrait les offres des dernières 24h et les publie sur Kafka (topic raw).
-    Retourne un dict avec les stats, stocké en XCom.
-    """
+
     departements = (
         ",".join(settings.etl_default_departments) if settings.etl_default_departments else None
     )

@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 from typing import Literal
 
@@ -9,16 +10,17 @@ class Settings(BaseSettings):
     """Configuration globale de l'application."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=os.getenv("ENV_FILE", ".env.local"),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
+        env_prefix="",
     )
 
-    # ============================================
-    # Environment
-    # ============================================
-    environment: Literal["development", "staging", "production"] = "development"
+    environment: Literal["local", "gcp", "production"] = Field(
+        default="local",
+        validation_alias="APP_ENV",
+    )
 
     # ============================================
     # API France Travail
@@ -72,7 +74,7 @@ class Settings(BaseSettings):
     # ============================================
     # Kafka
     # ============================================
-    kafka_bootstrap_servers: str = "localhost:9092"
+    kafka_bootstrap_servers: str = Field("kafka:29092", alias="KAFKA_BOOTSTRAP_SERVERS")
     kafka_topic_raw_offers: str = "francetravail_offres_raw"
     kafka_topic_dlq: str = "francetravail_offres_dlq"
     kafka_consumer_group: str = "francetravail-consumer"
@@ -113,7 +115,7 @@ class Settings(BaseSettings):
     # Streamlit
     # ============================================
     streamlit_port: int = 8501
-    streamlit_api_url: str = "http://localhost:8000"
+    streamlit_api_url: str = "http://api:8000"
 
     # ============================================
     # Logging
@@ -134,6 +136,18 @@ class Settings(BaseSettings):
 
     etl_default_contract_types: list[str] = Field(default_factory=lambda: ["CDI", "CDD"])
     etl_lookback_days: int = 14
+    
+    @property
+    def is_local(self) -> bool:
+        return self.environment == "local"
+
+    @property
+    def is_gcp(self) -> bool:
+        return self.environment == "gcp"
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment == "production"
 
     @field_validator("kafka_bootstrap_servers")
     @classmethod
@@ -148,7 +162,7 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             return [origin.strip() for origin in v.split(",")]
         return v
-
+    
 
 @lru_cache
 def get_settings() -> Settings:

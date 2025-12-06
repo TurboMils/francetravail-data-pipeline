@@ -5,19 +5,18 @@ services:
     container_name: ft-postgres
     restart: unless-stopped
     env_file:
-      - ../.env
+      - ../.env.local
     environment:
-      POSTGRES_DB: francetravail_jobs
-      POSTGRES_USER: ft_user
-      POSTGRES_PASSWORD: your_secure_password
+      POSTGRES_USER: ${POSTGRES_USER:-ft_user}
+      POSTGRES_DB: ${POSTGRES_DB:-francetravail_jobs}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - ft-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ft_user -d francetravail_jobs"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ft_user} -d ${POSTGRES_DB:-francetravail_jobs}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -31,16 +30,15 @@ services:
       postgres:
         condition: service_healthy
     env_file:
-      - ../.env
+      - ../.env.local
     environment:
-      POSTGRES_HOST: postgres
       PYTHONPATH: /app/src
     volumes:
       - ../src:/app/src
     command: python -m db.init_db
     networks:
       - ft-network
-    restart: "no"  # Ne redémarre pas une fois terminé
+    restart: "no"  
 
   # FastAPI
   api:
@@ -55,25 +53,16 @@ services:
       db-init:
         condition: service_completed_successfully  
     env_file:
-      - ../.env
+      - ../.env.local
     environment:
-      POSTGRES_HOST: postgres
-      API_HOST: 0.0.0.0
-      API_PORT: 8000
       PYTHONPATH: /app/src
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     ports:
-      - "8000:8000"
+       - "${API_PORT:-8000}:8000"
     volumes:
       - ../src:/app/src
-    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn api.main:app --host ${API_HOST:-0.0.0.0} --port ${API_PORT:-8000} --reload
     networks:
       - ft-network
-    healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   # Streamlit
   streamlit:
@@ -84,10 +73,7 @@ services:
     depends_on:
       - api
     env_file:
-      - ../.env
-    environment:
-      STREAMLIT_API_URL: http://api:8000
-      PYTHONPATH: /app/src
+      - ../.env.local
     ports:
       - "8501:8501"
     volumes:
@@ -101,6 +87,8 @@ services:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: ft-zookeeper
     restart: unless-stopped
+    env_file:
+      - ../.env.local
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -109,29 +97,33 @@ services:
     networks:
       - ft-network
 
-  # Kafka (Confluent) avec 2 listeners
+  # Kafka 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: ft-kafka
     restart: unless-stopped
     depends_on:
       - zookeeper
+    env_file:
+      - ../.env.local
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-
-      # - PLAINTEXT  : interne (réseau docker) -> kafka:29092
-      # - PLAINTEXT_HOST : externe (host)     -> localhost:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
     ports:
       - "9092:9092"   
-      - "29092:29092" # optionnel pour debug
+      - "29092:29092"
+    healthcheck: 
+      test: ["CMD", "kafka-topics", "--list", "--bootstrap-server", "localhost:29092"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
     networks:
       - ft-network
   
@@ -145,14 +137,12 @@ services:
       postgres:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
       db-init:
         condition: service_completed_successfully
     env_file:
-      - ../.env
+      - ../.env.local
     environment:
-      POSTGRES_HOST: postgres
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       PYTHONPATH: /app/src
     volumes:
       - ../src:/app/src
@@ -169,17 +159,10 @@ services:
       airflow-db:
         condition: service_started
     env_file:
-      - ../.env
+      - ../.env.local
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
-      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_password@airflow-db:5432/airflow
-      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
-      AIRFLOW_UID: 50000clear
-      _AIRFLOW_DB_MIGRATE: 'true'
-      _AIRFLOW_WWW_USER_CREATE: 'true'
-      _AIRFLOW_WWW_USER_USERNAME: admin
-      _AIRFLOW_WWW_USER_PASSWORD: admin
     volumes:
       - ../src/airflow_dags:/opt/airflow/dags
       - ../src:/opt/airflow/src
@@ -221,15 +204,11 @@ services:
       db-init:
         condition: service_completed_successfully
     env_file:
-      - ../.env
+      - ../.env.local
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
-      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_password@airflow-db:5432/airflow
-      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
-      AIRFLOW_UID: 50000
       PYTHONPATH: /opt/airflow/src
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     volumes:
       - ../src/airflow_dags:/opt/airflow/dags
       - ../src:/opt/airflow/src
@@ -253,15 +232,11 @@ services:
       db-init:
         condition: service_completed_successfully
     env_file:
-      - ../.env
+      - ../.env.local
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: 'False'
-      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_password@airflow-db:5432/airflow
-      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
-      AIRFLOW_UID: 50000
       PYTHONPATH: /opt/airflow/src
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     volumes:
       - ../src/airflow_dags:/opt/airflow/dags
       - ../src:/opt/airflow/src

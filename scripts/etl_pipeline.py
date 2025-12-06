@@ -8,7 +8,6 @@ Pipeline ETL simple :
 
 import argparse
 
-from pydantic import Field
 
 from config.logging_config import get_logger
 from db.repository import OfferRepository
@@ -16,21 +15,17 @@ from db.sessions import get_session, init_db
 from etl.extractors.france_travail_api import FranceTravailClient, FranceTravailApiError
 from etl.transformers.cleaner import clean_offer
 from etl.transformers.validator import validate_offer
+from config.settings import settings
 
 logger = get_logger(__name__)
-
-etl_default_departments = [""]
-etl_default_keywords = [
-    "python"
-]  
 
 def run_etl(limit: int) -> None:
     logger.info("Initializing database...")
     init_db()
 
     client = FranceTravailClient()
-    departements = ",".join(etl_default_departments) if etl_default_departments else None
-    keywords = " ".join(etl_default_keywords) if etl_default_keywords else None
+    departements = ",".join(settings.etl_default_departments) if settings.etl_default_departments else None
+    keywords = " ".join(settings.etl_default_keywords) if settings.etl_default_keywords else None
     print(f"Running ETL with limit={limit}, departements={departements or 'all'}, keywords={keywords or 'none'}")
 
     # ========== Extract ==========
@@ -39,7 +34,6 @@ def run_etl(limit: int) -> None:
             keyword=keywords,
             departement=departements,
             limit=limit,
-            publiee_depuis=31,
             sort=1,
         )
     except FranceTravailApiError as exc:

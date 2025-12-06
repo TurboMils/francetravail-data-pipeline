@@ -21,6 +21,8 @@ class Offer(BaseModel):
     type_contrat: str | None
     type_contrat_libelle: str | None
     entreprise_nom: str | None
+    entreprise_url: str | None
+    contact_url: str | None
     experience_libelle: str | None
     experience_commentaire: str | None
     experience: str | None
