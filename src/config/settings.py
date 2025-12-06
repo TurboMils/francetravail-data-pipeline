@@ -136,7 +136,7 @@ class Settings(BaseSettings):
 
     etl_default_contract_types: list[str] = Field(default_factory=lambda: ["CDI", "CDD"])
     etl_lookback_days: int = 14
-    
+
     @property
     def is_local(self) -> bool:
         return self.environment == "local"
@@ -162,7 +162,7 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             return [origin.strip() for origin in v.split(",")]
         return v
-    
+
 
 @lru_cache
 def get_settings() -> Settings:
